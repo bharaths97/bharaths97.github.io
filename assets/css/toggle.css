@@ -113,15 +113,18 @@
   .ee-item {
     display: flex;
     align-items: flex-start;
+    flex-direction: column;
     background-color: #4acaa8;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding:15px;
   }
   
   .ee-logo {
-    width: 256px;
-    height: 256px;
+    width: 100%;
+    max-width: 150px;
+    height: auto;
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -130,6 +133,12 @@
     padding: 10px;
   }
   
+  .ee-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }  
+
   .ee-logo img {
     max-width: 100%;
     max-height: 100%;
@@ -137,40 +146,42 @@
   }
   
   .ee-details {
+    width: 100%;
+  }
+
+  .ee-title {
     padding: 15px;
     flex-grow: 1;
+    
   }
-  
-  .university-name {
+
+  .university-name,
+  .company-name {
     margin: 0 0 10px;
     font-size: 1.8em;
-    color: #333;
+    color: #ffffff;
   }
   
   .degree {
     margin: 0 0 5px;
-    font-size: 1em;
+    font-size: 1.5em;
     font-weight: bold;
-    color: #fff;
+    font-style: italic;
+    color: #333;
   }
   
   .time-location {
     margin: 0;
-    font-size: 1em;
+    font-size: 1.2em;
     font-weight: bold;
-    color: #fff;
+    color: #444;
   }
   
-  .company-name {
-    margin: 0 0 10px;
-    font-size: 1.8em;
-    color: #333;
-  }
-
   .company-location{
     margin: 0 0 15px;
     font-size: 1em;
     font-style: italic;
+    font-weight: bold;
     color: #333;
   }
 
@@ -190,7 +201,7 @@
     font-size: 1.3em;
     font-weight: bold;
     text-decoration: underline;
-    color: #fff;
+    color: #020202;
   }
 
   .role-title::before{
@@ -215,7 +226,6 @@
   }
   
   .role-description{
-    margin: 0 0 10px;
     font-size: 1em;
     font-weight: bold;
     color:#444;
@@ -224,12 +234,12 @@
   @media (max-width: 768) {
     .ee-item {
       flex-direction: column;
+      align-items: flex-start;
     }
     
     .ee-logo {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 1 / 1;
+      margin-right: 0;
+      margin-bottom: 15px;
     }
   }
 
@@ -244,7 +254,9 @@
   .tag-container {
     display: flex;
     flex-wrap: wrap;
-    margin-top: 10px;
+    margin-top: 0px;
+    margin-bottom: 5px;
+    align-items: center; 
   }
   
   .tag-item {
@@ -252,25 +264,36 @@
     margin-top: 0.5rem;
   }
   
-  .tag {
+  .tag-tech,
+  .tag-area_skill,
+  .tag-area_skill_exp {
     display: inline-flex;
     align-items: center;
     border-radius: 9999px;
-    background-color: rgba(0, 0, 0, 1);
     padding: 0.25rem 0.75rem;
-    font-size: 0.8em;
-    font-weight: bold;
+    font-size: 1em;
     line-height: 1.25rem;
+    /* Additional styles specific to .tag-tech and .tag-area_skill */
+  }
+
+  .tag-tech {
+    background-color: rgba(0, 0, 0, 1);
     color: #ffffff;
   }
-  .tag-main {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 9999px;
-    background-color: rgba(74, 202, 168, 0.8);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.8em;
-    font-weight: bold;
-    line-height: 1.25rem;
+
+  .tag-area_skill {
+    background-color: rgba(255, 255, 255, 0.8);
     color: #0c0c0c;
+  }
+
+  .tag-area_skill_exp {
+    background-color: rgb(74, 202, 168, 0.8);
+    color: #0c0c0c;
+  }
+
+  .custom-icon {
+    height: auto;
+    max-height: 1em; 
+    width: auto;
+    max-width: 1em;
   }
