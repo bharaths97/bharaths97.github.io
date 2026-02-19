@@ -1,0 +1,272 @@
+{
+  "profile": {
+    "name": "Bharath Suresh",
+    "email": "bharathsuresh.formal@gmail.com",
+    "github": "https://github.com/bharaths97",
+    "linkedin": "https://www.linkedin.com/in/bharathsuresh97"
+  },
+  "navigation": [
+    { "id": "home", "label": "whoami" },
+    { "id": "education", "label": "/patches" },
+    { "id": "work", "label": "/runtime", "sublabels":"/production,/testing" },
+    { "id": "projects", "label": "/labs" },
+    { "id": "contact", "label": "ping" }
+  ],
+  "home": {
+    "terminalTyping": "bharath_suresh.init",
+    "badge": "<SYSTEM_ONLINE/>",
+    "headline": ["BHARATH_", "SURESH"],
+    "primaryLine": "> whoami --brief",
+    "secondaryLine": "Security Engineer | Cruciverbalist | Cricketer | Violinist",
+    "terminalBlocks": [
+      {
+        "command": "whoami",
+        "output": "Cybersecurity graduate who enjoys understanding how systems break — and why.\nSoftware engineer with a bias toward building and then testing the edges.\nCruciverbalist drawn to patterns, misdirection, and layered thinking.\nCricketer, Violinist, and Swiftie — because hobbies"
+      },
+      {
+        "command": "cat /background.MD",
+        "output": "I did not just pass courses, I patched my threat model every semester."
+      },
+      {
+        "command": "cat /runtime/testing.MD",
+        "output": "Threat model passed manual review, now to stress test."
+      },
+      {
+        "command": "cat /runtime/production.MD",
+        "output": "From testing systems to production systems, deployed the skills to the world."
+      },
+      {
+        "command": "cat /lab.MD",
+        "output": "Had to do something in my freetime right?"
+      },
+      {
+        "command": "ping bharath_suresh",
+        "output": "64 bytes from github: https://github.com/bharaths97 \n 64 bytes from linkedin: https://www.linkedin.com/in/bharathsuresh97 \n 64 bytes from gmail: bharathsuresh.formal@gmail.com"
+      }
+    ],
+    "primaryButton": "Enumerate Directories",  
+    "secondaryButton": "Establish Shell",
+    "tertiaryButton": "Download Recon (Resume)",
+    "tertiaryButtonUrl": "/resources/Bharath_Suresh_Resume.pdf",
+    "socialLinks": [
+      { "icon": "github", "url": "https://github.com/bharaths97" },
+      { "icon": "linkedin", "url": "https://www.linkedin.com/in/bharathsuresh97" },
+      { "icon": "mail", "url": "mailto:bharathsuresh.formal@gmail.com" }
+    ]
+  },
+  "sections": [
+    {
+      "id": "education",
+      "label": "/patches",
+      "tag": "> /patches",
+      "title": "EDUCATION.Log",
+      "subtitle": "High-level education snapshot.",
+      "items": [
+        {
+          "id": "rit",
+          "title": "M.S. Cybersecurity",
+          "meta": "Rochester Institute of Technology [2021 - 2025]",
+          "summary": "Strong base in cryptography, system security, forensics, and software engineering.",
+          "bullets": [
+            "M.S. Cybersecurity, Rochester Institute of Technology (2021-2024)"
+          ]
+        },
+        {
+          "id": "sastra",
+          "title": "B.Tech Electronics and Communication Engineering",
+          "meta": "SASTRA Deemed University [2015 - 2019]",
+          "summary": "Strong base in cryptography, system security, forensics, and software engineering.",
+          "bullets": [
+            "Hands-on research and security-focused academic projects"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "work",
+      "label": "/runtime",
+      "tag": "> /runtime",
+      "title": "EXPERIENCE.Log",
+      "subtitle": "High-level professional timeline.",
+      "items": [
+        {
+          "id": "exp-bv",
+          "title": "Bureau Veritas Cybersecurity",
+          "sublabel": "/production",
+          "meta": "Security Engineer I  |  Seattle, WA  |  Jan 2025 - Jan 2026",
+          "summary": "Pen testing of AWS services. Breaking cloud services the way attackers would.",
+          "bullets": [
+            "Code and threat model reviews to understand trust boundaries.",
+            "Testing of authentication flows, IAM policies, and service interactions.",
+            "Adversarial testing of AI-integrated service, focusing on prompt injection and orchestration abuse."
+          ]
+        },
+        {
+          "id": "exp-winwin",
+          "title": "WinWin Labs",
+          "sublabel": "/production",
+          "meta": "Security Engineer  |  Remote, NY  |  Aug 2024 - Jan 2025",
+          "summary": "API security testing and broken logic analysis.",
+          "bullets": [
+            "Mapped API flows to understand access control and state transitions.",
+            "Tested authorization boundaries and validated remediation changes."
+          ]
+        },
+        {
+          "id": "exp-zoho",
+          "title": "Zoho Corporation",
+          "sublabel": "/production",
+          "meta": "Member Technical Staff  |  Chennai, India  |  Jun 2019 - Jul 2021",
+          "summary": "Built native Windows agents for enterprise security and vulnerbility monitoring products. Defending networks one endpoint at a time.",
+          "bullets": [
+            "Developed Windows endpoint agents in Visual C++",
+            "Implemented scanning and remediation logic OS and Application misconfigurations.",
+            "Designed vulnerability detection tied to patching status.",
+            "Researched OWASP Top 10 and CWE Top 25 patterns."
+          ]
+        },
+        {
+          "id": "exp-isecure",
+          "title": "iSecure LLC",
+          "sublabel": "/testing",
+          "meta": "Information Security Engineering Intern  |  Rochester, NY  |  Jun 2023 - Aug 2023",
+          "summary": "Security assessments and endpoint data collection. Cloud and compliance-focused reviews.",
+          "bullets": [
+            "Developed macOS packages and scripts for system and network data collection.",
+            "Conducted security assessments across financial, healthcare, and education sectors.",
+            "Documented network and cloud security postures with NIST controls."
+          ]
+        },
+        {
+          "id": "exp-chgg",
+          "title": "Chegg",
+          "sublabel": "/testing",
+          "meta": "Security Engineering Intern  |  San Jose, WA  |  Jun 2022 - Aug 2022",
+          "summary": "Security operations and web testing in a production environment. Detection, validation, and response.",
+          "bullets": [
+            "Implemented Microsoft Office web bugs using API hooks.",
+            "Built Splunk-to-Slack automation for incident notifications.",
+            "Conducted web application testing of Math Solver"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "label": "/labs",
+      "tag": "> /labs",
+      "title": "PROJECTS-RESEARCH-BUGBOUNTY.log",
+      "subtitle": "Research, tooling, and real-world vulnerability disclosures.",
+      "items": [
+        {
+          "id": "manageengine-disclosures",
+          "title": "ManageEngine Vulnerability Manager Plus Disclosures",
+          "meta": "Vulnerability Research + Responsible Disclosure",
+          "summary": "Security issues identified and remediated in production endpoint agents.",
+          "bullets": [
+            "Disclosed sensitive information logging in VMP agent failure states.",
+            "Identified privilege escalation via path hijacking in agent execution flow.",
+            "Linked command invocation behavior to escalation vector.",
+            "Issues acknowledged and fixed by vendor."
+          ],
+          "links": [
+            { "label": "Logging Advisory", "url": "https://www.manageengine.com/vulnerability-management/sensitive_info_logging_fix.html" },
+            { "label": "Path Hijack Advisory", "url": "https://www.manageengine.com/vulnerability-management/path_hijacking_security_update_2024.html" }
+          ]
+        },
+        {
+          "id": "covert-crossword",
+          "title": "Covert Channels in Cryptic Crosswords",
+          "meta": "Steganography + Conference Publication",
+          "summary": "Modeled adversarial communication hidden in plain sight.",
+          "bullets": [
+            "Designed three covert data-hiding channels using crossword structures.",
+            "Embedded signaling within mass-media cryptic constructions.",
+            "Explored steganographic communication through linguistic constraints.",
+            "Presented at Annual Symposium on Information Assurance."
+          ],
+          "links": [
+            { "label": "Conference Paper", "url": "https://livealbany.sharepoint.com/:b:/s/web_facets/EREKxFULQv5FjoP8Lfz5dk8BgngBvbFIdpFSd0yUpdd9yQ?e=7eiBzv" }
+          ]
+        },
+        {
+          "id": "sinesframework",
+          "title": "Sines Framework",
+          "meta": "DFIR Automation | Windows + Linux",
+          "summary": "Cross-platform forensic artifact collection framework.",
+          "bullets": [
+            "Automated acquisition of 43 forensic artifacts.",
+            "Designed modular architecture for scalable investigations.",
+            "Supported Windows and Linux endpoint triage workflows."
+          ],
+          "links": [
+            { "label": "GitHub", "url": "https://github.com/bharaths97/SinesFramework" }
+          ]
+        },
+        {
+          "id": "cryptanalysis-study",
+          "title": "Cryptanalysis & Fluid Intelligence Study",
+          "meta": "Cognition + Cipher Analysis",
+          "summary": "Studied pattern recognition parallels between crossword solving and cryptanalysis.",
+          "bullets": [
+            "Analyzed structural decomposition in cipher-breaking methods.",
+            "Explored probabilistic reasoning in cryptic clue solving.",
+            "Connected fluid intelligence to battern breaking abilities."
+          ],
+          "links": [
+            { "label": "GitHub", "url": "https://github.com/bharaths97/Cryptanalysis-Using-Fluid-Intelligence—Decrypting-Cryptic-Crosswords" }
+          ]
+        },
+        {
+          "id": "a51-enhancement",
+          "title": "A5/1 Keystream Randomness Enhancement",
+          "meta": "Graduate Capstone | Cryptography",
+          "summary": "Improved GSM keystream randomness using structured linguistic integration.",
+          "bullets": [
+            "Integrated linguistic patterns into A5/1 keystream generation.",
+            "Evaluated randomness using NIST statistical testing suite.",
+            "Demonstrated measurable improvement over baseline output."
+          ],
+          "links": [
+            { "label": "GitHub", "url": "https://github.com/bharaths97/Sanskrit-Crypto" }
+          ]
+        }
+      ]
+    }
+  ],
+  "contact": {
+    "tag": "> ping bharath_suresh",
+    "title": "OPEN_PORT_443",
+    "subtitle": "Get in touch!",
+    "form": {
+      "terminalLabel": "> contact_form.exe",
+      "successTitle": "HANDSHAKE_COMPLETE",
+      "successMessage": "// Connection established. Message queued securely.",
+      "labels": {
+        "name": "> CALLSIGN:",
+        "email": "> RETURN_PATH:",
+        "subject": "> OPERATION_TOPIC:",
+        "message": "> PAYLOAD:"
+      },
+      "placeholders": {
+        "name": "Your name",
+        "email": "you@domain.com",
+        "subject": "Role / Collaboration / Security Project",
+        "message": "// Describe what you are building or hiring for..."
+      },
+      "submitDefault": "> TRANSMIT_MESSAGE",
+      "submitSending": "TRANSMITTING...",
+      "errorMessage": "ERROR: transmission failed. Retry.",
+      "statusLabel": "System Status",
+      "readyLabel": "READY",
+      "connectionLabel": "Connection Type",
+      "connectionValue": "HTTPS",
+      "encryptionLabel": "Encryption",
+      "encryptionValue": "ENABLED"
+    }
+  },
+  "footer": {
+    "copyright": "Bharath Suresh | Portfolio",
+    "tagline": "// Built with React + Vite"
+  }
+}
