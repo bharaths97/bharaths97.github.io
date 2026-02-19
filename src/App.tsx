@@ -128,15 +128,27 @@ type ParsedSubNav = {
   targetId: string;
 };
 
+const subgroupSlug = (value: string): string => value.replace(/^\/+/, '').replace(/\s+/g, '-').toLowerCase();
+
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [typedText, setTypedText] = useState('');
   const fullText = content.home.terminalTyping;
+  const derivedSubgroupIds = content.sections.flatMap((section) => {
+    const explicit = (section.subgroups || []).map((group) => group.id);
+    const fromItems = (section.items || [])
+      .map((item) => item.sublabel?.trim())
+      .filter((value): value is string => Boolean(value))
+      .map((value) => `${section.id}-${subgroupSlug(value)}`);
+
+    return [...explicit, ...fromItems];
+  });
+
   const knownTargets = new Set<string>([
     'home',
     'contact',
     ...content.sections.map((section) => section.id),
-    ...content.sections.flatMap((section) => (section.subgroups || []).map((group) => group.id)),
+    ...derivedSubgroupIds,
     ...content.navigation.map((item) => item.id)
   ]);
 
@@ -171,13 +183,23 @@ export default function App() {
     const list = rawList.map((entry) => {
       if (typeof entry === 'string') {
         const normalized = normalizeTarget(entry);
-        const targetId = knownTargets.has(normalized) ? normalized : item.id;
+        const sectionScopedTarget = `${item.id}-${subgroupSlug(entry)}`;
+        const targetId = knownTargets.has(normalized)
+          ? normalized
+          : knownTargets.has(sectionScopedTarget)
+            ? sectionScopedTarget
+            : item.id;
         return { label: entry.trim(), targetId };
       }
 
       const label = entry.label.trim();
       const normalized = entry.id ? normalizeTarget(entry.id) : normalizeTarget(entry.label);
-      const targetId = knownTargets.has(normalized) ? normalized : item.id;
+      const sectionScopedTarget = `${item.id}-${subgroupSlug(entry.label)}`;
+      const targetId = knownTargets.has(normalized)
+        ? normalized
+        : knownTargets.has(sectionScopedTarget)
+          ? sectionScopedTarget
+          : item.id;
       return { label, targetId };
     });
 
