@@ -64,20 +64,25 @@
       "items": [
         {
           "id": "rit",
-          "title": "M.S. Cybersecurity",
-          "meta": "Rochester Institute of Technology [2021 - 2025]",
-          "summary": "Strong base in cryptography, system security, forensics, and software engineering.",
+          "title": "Rochester Institute of Technology",
+          "meta": "M.S. Cybersecurity  |  2021 - 2024  |  Rochester, NY",
+          "summary": "Focused on applied cryptography, system security, reverse engineering, and covert communications research.",
           "bullets": [
-            "M.S. Cybersecurity, Rochester Institute of Technology (2021-2024)"
+            "Graduate capstone on A5/1 keystream randomness enhancement.",
+            "Built cross-platform DFIR automation framework (SINES).",
+            "Published research on covert channels in cryptic crosswords.",
+            "Studied malware reverse engineering and advanced forensics."
           ]
         },
         {
           "id": "sastra",
           "title": "B.Tech Electronics and Communication Engineering",
           "meta": "SASTRA Deemed University [2015 - 2019]",
-          "summary": "Strong base in cryptography, system security, forensics, and software engineering.",
+          "summary": "Engineering foundation in systems, hardware, and embedded development.",
           "bullets": [
-            "Hands-on research and security-focused academic projects"
+            "Developed Arduino-based automation and microcontroller projects.",
+            "Organized international conference on communication and security.",
+            "Recipient of Shri H Mahadeva Iyer Award."
           ]
         }
       ]
