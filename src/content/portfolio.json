@@ -21,7 +21,7 @@
     "terminalBlocks": [
       {
         "command": "whoami",
-        "output": "Cybersecurity graduate who enjoys understanding how systems break — and why.\nSoftware engineer with a bias toward building and then testing the edges.\nCruciverbalist drawn to patterns, misdirection, and layered thinking.\nCricketer, Violinist, and Swiftie — because hobbies"
+        "output": "Security Engineer who enjoys breaking systems, and understanding how and why they break.\nSoftware engineer with a bias toward building and then testing the edges.\nCruciverbalist drawn to patterns, misdirection, and layered thinking.\nCricketer, Violinist, and Swiftie — because hobbies"
       },
       {
         "command": "cat /background.MD",
