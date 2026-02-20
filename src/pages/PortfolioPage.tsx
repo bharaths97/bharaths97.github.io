@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Terminal, Menu, X, Github, Linkedin, Mail, ChevronRight } from 'lucide-react';
+import { AnimatedTerminalBlocks } from '../components/AnimatedTerminalBlocks';
 import { PortfolioSection } from '../components/PortfolioSection';
 import portfolioContent from '../content/portfolio.json';
 
@@ -349,14 +350,7 @@ export function PortfolioPage() {
             <p className="font-mono text-sm opacity-80">{content.home.secondaryLine}</p>
           </div>
 
-          <div className="mx-auto mb-8 max-w-3xl rounded border border-green-matrix/30 bg-black-light/40 p-5 text-left">
-            {content.home.terminalBlocks.map((block) => (
-              <div key={block.command} className="mb-3 last:mb-0">
-                <p className="font-mono text-green-matrix">{`> ${block.command}`}</p>
-                <p className="font-mono text-green-dark text-sm whitespace-pre-line">{block.output}</p>
-              </div>
-            ))}
-          </div>
+          <AnimatedTerminalBlocks blocks={content.home.terminalBlocks} />
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button

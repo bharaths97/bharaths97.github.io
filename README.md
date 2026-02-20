@@ -119,13 +119,23 @@ Configure Access after core app flow is stable.
 
 ## End-to-End Manual Verification Checklist
 
-1. Unauthenticated API call is blocked by Access.
-2. Allowed OTP user can load session and chat.
-3. Non-allowlisted user receives forbidden response.
-4. Refresh keeps session transcript while token/session is active.
-5. Logout clears local transcript and forces re-auth.
-6. Session mismatch payload is rejected by Worker.
-7. Rate limits trigger expected `429` responses.
+Primary flow to validate first (in this exact order):
+1. Start unauthenticated and open `https://bharaths97.github.io/#/chat`.
+2. Verify redirection/challenge to Cloudflare Access login.
+3. Complete OTP login with an allowlisted user.
+4. Verify chat loads and `GET /api/chat/session` succeeds.
+5. Send at least one message and verify `POST /api/chat/respond` succeeds.
+6. Refresh page and confirm transcript/session continuity.
+7. Click Logout.
+8. Verify redirect back to homepage after Access logout.
+9. Re-open `#/chat` and confirm login is required again.
+10. Verify previous chat transcript is gone (session destruction + local state cleared).
+
+Additional security checks:
+1. Unauthenticated direct API call is blocked by Access.
+2. Non-allowlisted user receives forbidden response.
+3. Session mismatch payload is rejected by Worker.
+4. Rate limits trigger expected `429` responses.
 
 ---
 
