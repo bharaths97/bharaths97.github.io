@@ -1,4 +1,5 @@
 import { authenticateRequest, AuthError, deriveSessionId } from './access';
+import { createRequestLogger } from './logger';
 import { generateAssistantReply, UpstreamError } from './openai';
 import { enforceRespondRateLimit } from './rateLimit';
 import { errorResponse, getLimits, handleOptions, isOriginAllowed, jsonResponse, noContentResponse } from './security';
@@ -36,31 +37,33 @@ const toSessionResponse = (
   }
 });
 
-const logUsage = (
-  requestId: string,
-  auth: Awaited<ReturnType<typeof authenticateRequest>>,
-  usage: ChatRespondResponse['usage']
-): void => {
-  console.log(
-    JSON.stringify({
-      event: 'chat.respond.success',
-      request_id: requestId,
-      subject_prefix: auth.claims.sub.slice(0, 8),
-      model: usage?.model,
-      input_tokens: usage?.input_tokens,
-      output_tokens: usage?.output_tokens
-    })
-  );
+const subjectPrefix = (subject: string): string => subject.slice(0, 8);
+
+const emailDomain = (email: string): string => {
+  const parts = email.split('@');
+  return parts[1] || 'unknown';
 };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const startedAt = Date.now();
     const url = new URL(request.url);
     const origin = request.headers.get('Origin');
     const requestId = crypto.randomUUID();
+    const logger = createRequestLogger(env, {
+      requestId,
+      method: request.method,
+      path: url.pathname
+    });
+
+    logger.info('request.received', {
+      origin_present: Boolean(origin),
+      user_agent: request.headers.get('User-Agent') || 'unknown'
+    });
 
     try {
       if (request.method === 'OPTIONS') {
+        logger.debug('request.preflight');
         return handleOptions(request, env);
       }
 
@@ -70,6 +73,12 @@ export default {
         const auth = await authenticateRequest(request, env);
         const sessionId = await deriveSessionId(auth, env);
         const limits = getLimits(env);
+
+        logger.info('chat.session.success', {
+          subject_prefix: subjectPrefix(auth.claims.sub),
+          email_domain: emailDomain(auth.email),
+          duration_ms: Date.now() - startedAt
+        });
 
         return jsonResponse(
           origin,
@@ -123,7 +132,15 @@ export default {
           }
         };
 
-        logUsage(requestId, auth, response.usage);
+        logger.info('chat.respond.success', {
+          subject_prefix: subjectPrefix(auth.claims.sub),
+          email_domain: emailDomain(auth.email),
+          model: response.usage?.model,
+          input_tokens: response.usage?.input_tokens,
+          output_tokens: response.usage?.output_tokens,
+          duration_ms: Date.now() - startedAt
+        });
+
         return jsonResponse(origin, env, response, 200);
       }
 
@@ -143,23 +160,51 @@ export default {
           throw new AuthError('Session mismatch.', 403, 'FORBIDDEN');
         }
 
+        logger.info('chat.reset.success', {
+          subject_prefix: subjectPrefix(auth.claims.sub),
+          duration_ms: Date.now() - startedAt
+        });
+
         return noContentResponse(origin, env);
       }
 
+      logger.warn('request.not_found', {
+        duration_ms: Date.now() - startedAt
+      });
       return badRoute(origin, env, requestId);
     } catch (error) {
       if (error instanceof AuthError) {
+        logger.warn('request.auth_error', {
+          code: error.code,
+          status: error.status,
+          reason: error.message,
+          duration_ms: Date.now() - startedAt
+        });
         return errorResponse(origin, env, error.status, error.code, error.message, requestId);
       }
 
       if (error instanceof ValidationError) {
+        logger.warn('request.validation_error', {
+          status: error.status,
+          reason: error.message,
+          duration_ms: Date.now() - startedAt
+        });
         return errorResponse(origin, env, error.status, 'BAD_REQUEST', error.message, requestId);
       }
 
       if (error instanceof UpstreamError) {
+        logger.error('request.upstream_error', {
+          status: error.status,
+          reason: error.message,
+          duration_ms: Date.now() - startedAt
+        });
         return errorResponse(origin, env, error.status, 'UPSTREAM_ERROR', error.message, requestId);
       }
 
+      logger.error('request.internal_error', {
+        status: 500,
+        duration_ms: Date.now() - startedAt
+      });
       return errorResponse(origin, env, 500, 'INTERNAL', 'Internal server error.', requestId);
     }
   }

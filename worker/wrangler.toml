@@ -17,6 +17,7 @@ MAX_CONTEXT_CHARS = "12000"
 MAX_TURNS = "30"
 MAX_OUTPUT_TOKENS = "400"
 OPENAI_TIMEOUT_MS = "15000"
+LOG_LEVEL = "info"
 
 # Set these via `wrangler secret put ...`
 # OPENAI_API_KEY

@@ -78,7 +78,7 @@ Set your values for:
 - `ACCESS_API_AUD`
 - `ALLOWED_ORIGINS` (include `https://bharaths97.github.io`)
 - `ALLOWED_EMAILS`
-- Optional limits (`MAX_*`, timeout, model)
+- Optional limits (`MAX_*`, timeout, model) and `LOG_LEVEL`
 
 ### 2) Set Worker secrets (Cloudflare)
 Required:
@@ -137,6 +137,37 @@ Additional security checks:
 3. Session mismatch payload is rejected by Worker.
 4. Rate limits trigger expected `429` responses.
 
+## Recommended Next Steps (Now)
+
+1. Deploy Worker first and confirm `/api/chat/session` returns Access challenge when unauthenticated.
+2. Configure Access OTP + allowlist policy for the Worker API route.
+3. Deploy frontend with `VITE_CHAT_API_BASE_URL` and `VITE_CHAT_LOGOUT_URL` pointing to Worker/API domain.
+4. Execute manual flow in order:
+   - redirection -> login -> session -> logout -> redirection -> session destruction.
+5. Tail logs during the run and verify expected lifecycle events and `request_id` correlation.
+
+---
+
+## Backend Logging and Troubleshooting
+
+The Worker emits structured JSON logs with a per-request `request_id`.
+
+How to view logs:
+1. Local/CLI tail:
+   - `wrangler tail --config worker/wrangler.toml --format pretty`
+2. Cloudflare dashboard:
+   - `Workers & Pages -> your worker -> Logs`
+
+How to correlate a failing API request:
+1. Copy `error.request_id` from API error response JSON.
+2. Search logs for that `request_id`.
+3. Inspect lifecycle events (`request.received`, `chat.*.success`, `request.*_error`).
+
+Log safety notes:
+- Prompt and response bodies are not logged.
+- Metadata logged includes status code, duration, model, and token usage counts.
+- Configure verbosity with `LOG_LEVEL` in Worker vars.
+
 ---
 
 ## File Pointers
@@ -145,3 +176,6 @@ Additional security checks:
 - Chat frontend: `src/pages/ChatPage.tsx`, `src/lib/chatApi.ts`, `src/lib/chatRuntime.ts`
 - Worker backend: `worker/src/index.ts` and `worker/src/*`
 - Worker internals guide: `WORKER.md`
+- Authenticated architecture doc: `docs/ARCHITECTURE_AUTHENTICATED_V1.md`
+- Threat model (current state): `docs/THREAT_MODEL_AUTHENTICATED_V1.md`
+- Product roadmap (authenticated-first + guest deferred): `docs/ROADMAP.md`

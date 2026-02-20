@@ -16,6 +16,7 @@ export interface Env {
   MAX_TURNS?: string;
   MAX_OUTPUT_TOKENS?: string;
   OPENAI_TIMEOUT_MS?: string;
+  LOG_LEVEL?: string;
   RESPOND_BURST_LIMITER?: RateLimiterBinding;
   RESPOND_MINUTE_LIMITER?: RateLimiterBinding;
 }

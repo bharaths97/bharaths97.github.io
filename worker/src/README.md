@@ -23,12 +23,16 @@ Optional vars:
 - `MAX_TURNS`
 - `MAX_OUTPUT_TOKENS`
 - `OPENAI_TIMEOUT_MS`
+- `LOG_LEVEL` (`debug`, `info`, `warn`, `error`)
 
 Optional rate limit bindings:
 - `RESPOND_BURST_LIMITER`
 - `RESPOND_MINUTE_LIMITER`
 
-Notes:
-- Auth is enforced with Cloudflare Access JWT validation in `src/access.ts`.
-- `/respond` includes validation, optional rate limiting, and upstream timeout controls.
-- See root `WORKER.md` for file-level architecture details.
+Logging:
+- Structured JSON logs are emitted per request with `request_id`, event type, status metadata, and duration.
+- Prompt/response bodies are intentionally not logged.
+- View logs via:
+  - `wrangler tail --config worker/wrangler.toml --format pretty`
+  - Cloudflare Dashboard -> Workers -> your worker -> Logs.
+- Correlate API errors with logs using `error.request_id` returned in API error JSON.
