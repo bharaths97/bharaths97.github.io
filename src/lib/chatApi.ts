@@ -1,4 +1,5 @@
 import type { ChatRole } from '../types/chat';
+import { buildChatApiUrl } from './chatRuntime';
 
 export interface ChatSessionResponse {
   ok: boolean;
@@ -106,18 +107,18 @@ const request = async <T>(input: string, init: RequestInit = {}): Promise<T> => 
 };
 
 export const getChatSession = async (): Promise<ChatSessionResponse> => {
-  return request<ChatSessionResponse>('/api/chat/session', { method: 'GET' });
+  return request<ChatSessionResponse>(buildChatApiUrl('/api/chat/session'), { method: 'GET' });
 };
 
 export const postChatRespond = async (payload: ChatRespondRequest): Promise<ChatRespondResponse> => {
-  return request<ChatRespondResponse>('/api/chat/respond', {
+  return request<ChatRespondResponse>(buildChatApiUrl('/api/chat/respond'), {
     method: 'POST',
     body: JSON.stringify(payload)
   });
 };
 
 export const postChatReset = async (sessionId: string): Promise<void> => {
-  return request<void>('/api/chat/reset', {
+  return request<void>(buildChatApiUrl('/api/chat/reset'), {
     method: 'POST',
     body: JSON.stringify({ session_id: sessionId })
   });

@@ -9,7 +9,22 @@ const normalizePathname = (pathname: string): string => {
   return trimmed === '' ? '/' : trimmed;
 };
 
-const getRouteFromPathname = (pathname: string): AppRoute => {
+const normalizeHashRoute = (hash: string): string => {
+  const route = hash.replace(/^#/, '').trim();
+  if (!route) return '/';
+
+  if (route.startsWith('/')) return normalizePathname(route);
+  return normalizePathname(`/${route}`);
+};
+
+const getRouteFromLocation = (locationValue: Pick<Location, 'pathname' | 'hash'>): AppRoute => {
+  const normalizedHashRoute = normalizeHashRoute(locationValue.hash);
+  if (normalizedHashRoute === '/chat') {
+    return 'chat';
+  }
+
+  // Supports direct /chat where hosting layer handles SPA fallback.
+  const pathname = locationValue.pathname;
   const normalized = normalizePathname(pathname.toLowerCase());
   if (normalized === '/chat' || normalized.endsWith('/chat')) {
     return 'chat';
@@ -19,15 +34,19 @@ const getRouteFromPathname = (pathname: string): AppRoute => {
 };
 
 export default function App() {
-  const [route, setRoute] = useState<AppRoute>(() => getRouteFromPathname(window.location.pathname));
+  const [route, setRoute] = useState<AppRoute>(() => getRouteFromLocation(window.location));
 
   useEffect(() => {
-    const handlePopState = () => {
-      setRoute(getRouteFromPathname(window.location.pathname));
+    const syncRoute = () => {
+      setRoute(getRouteFromLocation(window.location));
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', syncRoute);
+    window.addEventListener('hashchange', syncRoute);
+    return () => {
+      window.removeEventListener('popstate', syncRoute);
+      window.removeEventListener('hashchange', syncRoute);
+    };
   }, []);
 
   if (route === 'chat') {

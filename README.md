@@ -36,3 +36,30 @@ Important:
   - `"/repo-name/"` for project-site repos
 - Core app entry is `src/main.tsx` and `src/App.tsx`.
 - Main styling is in `src/styles/globals.css`.
+
+## Private Chat On GitHub Pages
+
+Because GitHub Pages is static-only, the chat API must run on a separate backend origin (Cloudflare Worker).
+
+1. Add a `.env` file for frontend runtime config:
+
+```bash
+VITE_CHAT_API_BASE_URL=https://your-chat-api-domain.com
+VITE_CHAT_LOGOUT_URL=https://your-chat-api-domain.com/cdn-cgi/access/logout
+```
+
+2. In your Worker config, allow this frontend origin for CORS:
+
+```bash
+ALLOWED_ORIGINS=https://bharaths97.github.io
+```
+
+3. Open private chat on GitHub Pages with hash routing:
+
+```text
+https://bharaths97.github.io/#/chat
+```
+
+Notes:
+- Direct `/chat` paths depend on hosting-level SPA fallback. GitHub Pages does not provide this by default.
+- The OpenAI key stays server-side in Worker secrets only.

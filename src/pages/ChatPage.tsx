@@ -3,6 +3,7 @@ import { ChatComposer } from '../components/chat/ChatComposer';
 import { ChatTopBar } from '../components/chat/ChatTopBar';
 import { ChatTranscript } from '../components/chat/ChatTranscript';
 import { ChatApiError, getChatSession, postChatReset, postChatRespond } from '../lib/chatApi';
+import { getChatLogoutUrl } from '../lib/chatRuntime';
 import {
   clearAllChatStorage,
   clearSessionMessages,
@@ -27,6 +28,8 @@ const formatErrorMessage = (error: unknown): string => {
 
   return 'Unable to reach chat backend right now.';
 };
+
+const CHAT_LOGOUT_URL = getChatLogoutUrl();
 
 export function ChatPage() {
   const [username, setUsername] = useState('authorized_user');
@@ -111,7 +114,7 @@ export function ChatPage() {
     } catch (error) {
       if (error instanceof ChatApiError && (error.status === 401 || error.status === 403)) {
         clearAllChatStorage();
-        window.location.assign('/cdn-cgi/access/logout');
+        window.location.assign(CHAT_LOGOUT_URL);
         return;
       }
 
@@ -133,7 +136,7 @@ export function ChatPage() {
     }
 
     clearAllChatStorage();
-    window.location.assign('/cdn-cgi/access/logout');
+    window.location.assign(CHAT_LOGOUT_URL);
   };
 
   return (
