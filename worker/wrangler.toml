@@ -19,6 +19,22 @@ MAX_OUTPUT_TOKENS = "400"
 OPENAI_TIMEOUT_MS = "15000"
 LOG_LEVEL = "info"
 
+# Local/dev deployment overrides.
+# Use: `npx wrangler deploy --env dev`
+[env.dev.vars]
+ACCESS_TEAM_DOMAIN = "your-team.cloudflareaccess.com"
+ACCESS_API_AUD = "your-access-aud"
+ALLOWED_ORIGINS = "https://bharaths97.github.io,http://localhost:5173"
+ALLOWED_EMAILS = "you@example.com"
+OPENAI_MODEL = "gpt-4o-mini"
+MAX_USER_CHARS = "2000"
+MAX_CONTEXT_MESSAGES = "12"
+MAX_CONTEXT_CHARS = "12000"
+MAX_TURNS = "30"
+MAX_OUTPUT_TOKENS = "400"
+OPENAI_TIMEOUT_MS = "15000"
+LOG_LEVEL = "debug"
+
 # Set these via `wrangler secret put ...`
 # OPENAI_API_KEY
 # SESSION_HMAC_SECRET

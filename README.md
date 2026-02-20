@@ -15,6 +15,7 @@ Optional frontend env (`.env`):
 ```bash
 VITE_CHAT_API_BASE_URL=https://your-chat-api-domain.com
 VITE_CHAT_LOGOUT_URL=https://your-chat-api-domain.com/cdn-cgi/access/logout
+VITE_CHAT_LOGOUT_RETURN_TO=https://bharaths97.github.io/
 ```
 
 ## Build
@@ -65,7 +66,7 @@ Notes:
 - Direct `/chat` is not reliable on GitHub Pages (no SPA fallback by default).
 - `#/chat` is the correct route for Pages.
 - Logout behavior:
-  - If `VITE_CHAT_LOGOUT_URL` is Access logout URL, app appends a `returnTo` back to homepage.
+  - If `VITE_CHAT_LOGOUT_URL` is Access logout URL, app calls logout endpoint first, then redirects to `VITE_CHAT_LOGOUT_RETURN_TO` (or homepage default).
   - If not set, app defaults to Access logout on API base URL when available; otherwise `/`.
 
 ---
@@ -111,6 +112,7 @@ Configure Access after core app flow is stable.
 2. Enable OTP login and explicit email allowlist policy.
 3. Confirm Access JWT audience matches `ACCESS_API_AUD` in Worker config.
 4. Verify only allowed users can call:
+   - `GET /api/chat/login`
    - `GET /api/chat/session`
    - `POST /api/chat/respond`
    - `POST /api/chat/reset`

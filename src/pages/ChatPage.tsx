@@ -3,7 +3,7 @@ import { ChatComposer } from '../components/chat/ChatComposer';
 import { ChatTopBar } from '../components/chat/ChatTopBar';
 import { ChatTranscript } from '../components/chat/ChatTranscript';
 import { ChatApiError, getChatSession, postChatReset, postChatRespond } from '../lib/chatApi';
-import { getChatLogoutUrl } from '../lib/chatRuntime';
+import { getChatAccessLoginUrl, isExternalChatApiConfigured, logoutFromAccessAndRedirect } from '../lib/chatRuntime';
 import {
   clearAllChatStorage,
   clearSessionMessages,
@@ -29,7 +29,13 @@ const formatErrorMessage = (error: unknown): string => {
   return 'Unable to reach chat backend right now.';
 };
 
-const CHAT_LOGOUT_URL = getChatLogoutUrl();
+const shouldRedirectToAccessLogin = (error: unknown): boolean => {
+  if (error instanceof ChatApiError) {
+    return error.status === 401 || error.status === 403;
+  }
+
+  return isExternalChatApiConfigured();
+};
 
 export function ChatPage() {
   const [username, setUsername] = useState('authorized_user');
@@ -60,6 +66,12 @@ export function ChatPage() {
       const nextUsername = session.user.display_name?.trim() || session.user.email || 'authorized_user';
       setUsername(nextUsername);
     } catch (error) {
+      if (shouldRedirectToAccessLogin(error)) {
+        clearAllChatStorage();
+        window.location.assign(getChatAccessLoginUrl());
+        return;
+      }
+
       setSessionId(null);
       setMessages([]);
       setErrorMessage(formatErrorMessage(error));
@@ -114,7 +126,7 @@ export function ChatPage() {
     } catch (error) {
       if (error instanceof ChatApiError && (error.status === 401 || error.status === 403)) {
         clearAllChatStorage();
-        window.location.assign(CHAT_LOGOUT_URL);
+        await logoutFromAccessAndRedirect();
         return;
       }
 
@@ -136,7 +148,7 @@ export function ChatPage() {
     }
 
     clearAllChatStorage();
-    window.location.assign(CHAT_LOGOUT_URL);
+    await logoutFromAccessAndRedirect();
   };
 
   return (

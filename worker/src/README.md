@@ -1,6 +1,7 @@
 # Worker API
 
 Endpoints:
+- `GET /api/chat/login`
 - `GET /api/chat/session`
 - `POST /api/chat/respond`
 - `POST /api/chat/reset`

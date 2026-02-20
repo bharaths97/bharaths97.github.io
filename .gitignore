@@ -14,3 +14,7 @@ WORKER.md
 
 CONFIGS.md
 docs/
+LOGS/
+worker/wrangler-test.toml
+.vscode/
+worker/.env.example

@@ -83,6 +83,20 @@ export const noContentResponse = (origin: string | null, env: Env): Response => 
   });
 };
 
+export const redirectResponse = (
+  origin: string | null,
+  env: Env,
+  location: string,
+  status = 302
+): Response => {
+  return new Response(null, {
+    status,
+    headers: mergeHeaders(origin, env, {
+      Location: location
+    })
+  });
+};
+
 export const errorResponse = (
   origin: string | null,
   env: Env,

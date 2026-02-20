@@ -2,7 +2,15 @@ import { authenticateRequest, AuthError, deriveSessionId } from './access';
 import { createRequestLogger } from './logger';
 import { generateAssistantReply, UpstreamError } from './openai';
 import { enforceRespondRateLimit } from './rateLimit';
-import { errorResponse, getLimits, handleOptions, isOriginAllowed, jsonResponse, noContentResponse } from './security';
+import {
+  errorResponse,
+  getLimits,
+  handleOptions,
+  isOriginAllowed,
+  jsonResponse,
+  noContentResponse,
+  redirectResponse
+} from './security';
 import type { ChatRespondResponse, ChatSessionResponse, Env } from './types';
 import { validateResetPayload, validateRespondPayload, ValidationError } from './validation';
 
@@ -44,6 +52,37 @@ const emailDomain = (email: string): string => {
   return parts[1] || 'unknown';
 };
 
+const parseAllowedOrigins = (env: Env): string[] =>
+  env.ALLOWED_ORIGINS.split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+
+const getDefaultReturnTo = (env: Env): string => {
+  const firstAllowedOrigin = parseAllowedOrigins(env)[0];
+  if (!firstAllowedOrigin) return '/';
+  return `${firstAllowedOrigin}/#/chat`;
+};
+
+const getSafeReturnTo = (url: URL, env: Env): string => {
+  const fallback = getDefaultReturnTo(env);
+  const rawReturnTo = url.searchParams.get('return_to')?.trim();
+
+  if (!rawReturnTo) return fallback;
+
+  try {
+    const candidate = new URL(rawReturnTo);
+    const allowedOrigins = new Set(parseAllowedOrigins(env));
+
+    if (!allowedOrigins.has(candidate.origin.toLowerCase())) {
+      return fallback;
+    }
+
+    return candidate.toString();
+  } catch {
+    return fallback;
+  }
+};
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const startedAt = Date.now();
@@ -68,6 +107,19 @@ export default {
       }
 
       ensureAllowedOrigin(origin, env);
+
+      if (url.pathname === '/api/chat/login' && request.method === 'GET') {
+        const auth = await authenticateRequest(request, env);
+        const returnTo = getSafeReturnTo(url, env);
+
+        logger.info('chat.login.success', {
+          subject_prefix: subjectPrefix(auth.claims.sub),
+          email_domain: emailDomain(auth.email),
+          duration_ms: Date.now() - startedAt
+        });
+
+        return redirectResponse(origin, env, returnTo, 302);
+      }
 
       if (url.pathname === '/api/chat/session' && request.method === 'GET') {
         const auth = await authenticateRequest(request, env);
