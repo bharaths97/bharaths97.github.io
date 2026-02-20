@@ -1,4 +1,4 @@
-# Worker API (Step 4 Scaffold)
+# Worker API
 
 Endpoints:
 - `GET /api/chat/session`
@@ -19,5 +19,16 @@ Optional vars:
 - `OPENAI_MODEL`
 - `MAX_USER_CHARS`
 - `MAX_CONTEXT_MESSAGES`
+- `MAX_CONTEXT_CHARS`
 - `MAX_TURNS`
 - `MAX_OUTPUT_TOKENS`
+- `OPENAI_TIMEOUT_MS`
+
+Optional rate limit bindings:
+- `RESPOND_BURST_LIMITER`
+- `RESPOND_MINUTE_LIMITER`
+
+Notes:
+- Auth is enforced with Cloudflare Access JWT validation in `src/access.ts`.
+- `/respond` includes validation, optional rate limiting, and upstream timeout controls.
+- See root `WORKER.md` for file-level architecture details.

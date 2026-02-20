@@ -1,12 +1,20 @@
-# Hacker Portfolio (GitHub Pages Ready)
+# Hacker Portfolio + Private Chat
 
-This folder is now a standalone React + Vite project that can be deployed to GitHub Pages.
+This repo deploys in two places:
+- GitHub Pages: static React frontend (`/` and `#/chat` UI)
+- Cloudflare Worker: private chat API backend (`/api/chat/*`)
 
-## Run locally
+## Local Development
 
 ```bash
 npm install
 npm run dev
+```
+
+Optional frontend env (`.env`):
+```bash
+VITE_CHAT_API_BASE_URL=https://your-chat-api-domain.com
+VITE_CHAT_LOGOUT_URL=https://your-chat-api-domain.com/cdn-cgi/access/logout
 ```
 
 ## Build
@@ -16,50 +24,114 @@ npm run build
 npm run preview
 ```
 
-## Deploy to GitHub Pages
+---
 
-1. Put this project at the root of your GitHub repo (or use this folder as a separate repo).
-2. Push to `main`.
-3. In GitHub repo settings:
-   - Open `Settings -> Pages`
-   - Under `Build and deployment`, select `Source: GitHub Actions`
-4. The workflow at `.github/workflows/deploy.yml` will build and deploy automatically.
+## Deployment Model (What Runs Where)
 
-Important:
-- GitHub Actions only reads workflows from the repository root `.github/workflows/`.
-- If `NEW` remains a subfolder inside a larger repo, move `NEW/.github/workflows/deploy.yml` to the root `.github/workflows/` and set the workflow `working-directory` to `NEW` for install/build steps.
+### GitHub Pages (frontend only)
+- Builds Vite app and publishes `dist`.
+- Runs from `.github/workflows/deploy.yml`.
+- Uses GitHub Actions repository variables:
+  - `VITE_CHAT_API_BASE_URL`
+  - `VITE_CHAT_LOGOUT_URL` (optional override)
 
-## Notes
+### Cloudflare Worker (backend only)
+- Deploys Worker code under `worker/`.
+- Runs from `.github/workflows/worker-deploy.yml`.
+- Uses Cloudflare API credentials stored as GitHub secrets:
+  - `CLOUDFLARE_API_TOKEN`
+  - `CLOUDFLARE_ACCOUNT_ID`
 
-- `vite.config.ts` auto-selects `base`:
-  - `"/"` for user-site repos like `username.github.io`
-  - `"/repo-name/"` for project-site repos
-- Core app entry is `src/main.tsx` and `src/App.tsx`.
-- Main styling is in `src/styles/globals.css`.
+No OpenAI key is exposed to frontend. OpenAI secret stays in Cloudflare Worker secrets only.
 
-## Private Chat On GitHub Pages
+---
 
-Because GitHub Pages is static-only, the chat API must run on a separate backend origin (Cloudflare Worker).
+## GitHub Pages Setup
 
-1. Add a `.env` file for frontend runtime config:
+1. Enable Pages in repository settings:
+   - `Settings -> Pages`
+   - Source: `GitHub Actions`
 
-```bash
-VITE_CHAT_API_BASE_URL=https://your-chat-api-domain.com
-VITE_CHAT_LOGOUT_URL=https://your-chat-api-domain.com/cdn-cgi/access/logout
-```
+2. Add GitHub Actions repository variables:
+   - `VITE_CHAT_API_BASE_URL=https://<your-worker-api-domain>`
+   - `VITE_CHAT_LOGOUT_URL=https://<your-worker-api-domain>/cdn-cgi/access/logout` (recommended for full sign-out)
 
-2. In your Worker config, allow this frontend origin for CORS:
+3. Push to `main` to trigger `.github/workflows/deploy.yml`.
 
-```bash
-ALLOWED_ORIGINS=https://bharaths97.github.io
-```
-
-3. Open private chat on GitHub Pages with hash routing:
-
-```text
-https://bharaths97.github.io/#/chat
-```
+4. Access chat route via hash routing on Pages:
+   - `https://bharaths97.github.io/#/chat`
 
 Notes:
-- Direct `/chat` paths depend on hosting-level SPA fallback. GitHub Pages does not provide this by default.
-- The OpenAI key stays server-side in Worker secrets only.
+- Direct `/chat` is not reliable on GitHub Pages (no SPA fallback by default).
+- `#/chat` is the correct route for Pages.
+- Logout behavior:
+  - If `VITE_CHAT_LOGOUT_URL` is Access logout URL, app appends a `returnTo` back to homepage.
+  - If not set, app defaults to Access logout on API base URL when available; otherwise `/`.
+
+---
+
+## Cloudflare Worker Setup
+
+### 1) Configure `worker/wrangler.toml`
+Set your values for:
+- `ACCESS_TEAM_DOMAIN`
+- `ACCESS_API_AUD`
+- `ALLOWED_ORIGINS` (include `https://bharaths97.github.io`)
+- `ALLOWED_EMAILS`
+- Optional limits (`MAX_*`, timeout, model)
+
+### 2) Set Worker secrets (Cloudflare)
+Required:
+- `OPENAI_API_KEY`
+- `SESSION_HMAC_SECRET`
+
+You can set these via dashboard or Wrangler secret commands.
+
+### 3) Deploy Worker
+Option A (recommended): GitHub Action
+- Add GitHub secrets:
+  - `CLOUDFLARE_API_TOKEN`
+  - `CLOUDFLARE_ACCOUNT_ID`
+- Push to `main` (changes under `worker/`) or run workflow manually:
+  - `.github/workflows/worker-deploy.yml`
+
+Option B: local deploy with Wrangler from `worker/`.
+
+### 4) Route/API hostname
+- Attach Worker to your API hostname/path in Cloudflare.
+- Frontend should call that API origin via `VITE_CHAT_API_BASE_URL`.
+
+---
+
+## Cloudflare Access (Manual Auth Testing Stage)
+
+Configure Access after core app flow is stable.
+
+1. Create Access application for your API origin/path (the Worker endpoint surface).
+2. Enable OTP login and explicit email allowlist policy.
+3. Confirm Access JWT audience matches `ACCESS_API_AUD` in Worker config.
+4. Verify only allowed users can call:
+   - `GET /api/chat/session`
+   - `POST /api/chat/respond`
+   - `POST /api/chat/reset`
+
+---
+
+## End-to-End Manual Verification Checklist
+
+1. Unauthenticated API call is blocked by Access.
+2. Allowed OTP user can load session and chat.
+3. Non-allowlisted user receives forbidden response.
+4. Refresh keeps session transcript while token/session is active.
+5. Logout clears local transcript and forces re-auth.
+6. Session mismatch payload is rejected by Worker.
+7. Rate limits trigger expected `429` responses.
+
+---
+
+## File Pointers
+
+- Frontend entry: `src/main.tsx`, `src/App.tsx`
+- Chat frontend: `src/pages/ChatPage.tsx`, `src/lib/chatApi.ts`, `src/lib/chatRuntime.ts`
+- Worker backend: `worker/src/index.ts` and `worker/src/*`
+- Worker internals guide: `WORKER.md`

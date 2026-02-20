@@ -46,6 +46,7 @@ export const validateRespondPayload = (
   limits: {
     maxUserChars: number;
     maxContextMessages: number;
+    maxContextChars: number;
     maxTurns: number;
   }
 ): ChatRespondRequest => {
@@ -101,6 +102,11 @@ export const validateRespondPayload = (
   const userTurnCount = messages.filter((message) => message.role === 'user').length;
   if (userTurnCount > limits.maxTurns) {
     throw new ValidationError('Maximum turn limit exceeded.');
+  }
+
+  const totalContextChars = messages.reduce((total, message) => total + message.content.length, 0);
+  if (totalContextChars > limits.maxContextChars) {
+    throw new ValidationError('Context payload too large.');
   }
 
   if (messages[messages.length - 1]?.role !== 'user') {

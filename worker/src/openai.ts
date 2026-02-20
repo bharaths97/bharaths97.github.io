@@ -33,6 +33,7 @@ export const generateAssistantReply = async (
   options: {
     maxContextMessages: number;
     maxOutputTokens: number;
+    timeoutMs: number;
   }
 ): Promise<{
   content: string;
@@ -55,14 +56,25 @@ export const generateAssistantReply = async (
     max_completion_tokens: options.maxOutputTokens
   };
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+  } catch {
+    throw new UpstreamError('Upstream provider request failed.', 502);
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new UpstreamError('Upstream provider request failed.', 502);

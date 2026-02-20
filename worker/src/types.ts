@@ -1,3 +1,7 @@
+interface RateLimiterBinding {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export interface Env {
   OPENAI_API_KEY: string;
   SESSION_HMAC_SECRET: string;
@@ -8,8 +12,12 @@ export interface Env {
   OPENAI_MODEL?: string;
   MAX_USER_CHARS?: string;
   MAX_CONTEXT_MESSAGES?: string;
+  MAX_CONTEXT_CHARS?: string;
   MAX_TURNS?: string;
   MAX_OUTPUT_TOKENS?: string;
+  OPENAI_TIMEOUT_MS?: string;
+  RESPOND_BURST_LIMITER?: RateLimiterBinding;
+  RESPOND_MINUTE_LIMITER?: RateLimiterBinding;
 }
 
 export interface AccessClaims {

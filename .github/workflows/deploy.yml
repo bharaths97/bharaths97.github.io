@@ -32,6 +32,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_CHAT_API_BASE_URL: ${{ vars.VITE_CHAT_API_BASE_URL }}
+          VITE_CHAT_LOGOUT_URL: ${{ vars.https://bharaths97.github.io }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

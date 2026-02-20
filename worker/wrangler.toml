@@ -13,9 +13,23 @@ ALLOWED_EMAILS = "you@example.com"
 OPENAI_MODEL = "gpt-4o-mini"
 MAX_USER_CHARS = "2000"
 MAX_CONTEXT_MESSAGES = "12"
+MAX_CONTEXT_CHARS = "12000"
 MAX_TURNS = "30"
 MAX_OUTPUT_TOKENS = "400"
+OPENAI_TIMEOUT_MS = "15000"
 
 # Set these via `wrangler secret put ...`
 # OPENAI_API_KEY
 # SESSION_HMAC_SECRET
+
+# Optional: per-user rate limiting on /api/chat/respond
+# Configure in Cloudflare and tune for low-volume personal usage.
+# [[ratelimits]]
+# binding = "RESPOND_BURST_LIMITER"
+# namespace_id = "replace-with-cloudflare-rate-limit-namespace-id"
+# simple = { limit = 3, period = 10 }
+#
+# [[ratelimits]]
+# binding = "RESPOND_MINUTE_LIMITER"
+# namespace_id = "replace-with-cloudflare-rate-limit-namespace-id"
+# simple = { limit = 20, period = 60 }

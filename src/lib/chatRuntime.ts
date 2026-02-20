@@ -13,10 +13,33 @@ export const buildChatApiUrl = (path: string): string => {
   return apiBaseUrl ? `${apiBaseUrl}${path}` : path;
 };
 
+const isAccessLogoutPath = (url: string): boolean => url.includes('/cdn-cgi/access/logout');
+
+const appendReturnTo = (logoutUrl: string, returnTo: string): string => {
+  try {
+    const url = new URL(logoutUrl, window.location.origin);
+    if (!url.searchParams.has('returnTo')) {
+      url.searchParams.set('returnTo', returnTo);
+    }
+    return url.toString();
+  } catch {
+    return logoutUrl;
+  }
+};
+
 export const getChatLogoutUrl = (): string => {
-  if (rawLogoutUrl) return rawLogoutUrl;
-  if (apiBaseUrl) return `${apiBaseUrl}/cdn-cgi/access/logout`;
-  return '/cdn-cgi/access/logout';
+  const returnTo = new URL('/', window.location.href).toString();
+
+  if (rawLogoutUrl) {
+    if (rawLogoutUrl === '/') return '/';
+    return isAccessLogoutPath(rawLogoutUrl) ? appendReturnTo(rawLogoutUrl, returnTo) : rawLogoutUrl;
+  }
+
+  if (apiBaseUrl) {
+    return appendReturnTo(`${apiBaseUrl}/cdn-cgi/access/logout`, returnTo);
+  }
+
+  return '/';
 };
 
 export const isExternalChatApiConfigured = (): boolean => Boolean(apiBaseUrl);
