@@ -1,0 +1,61 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { buildEnv, createAccessToken, installJwksFetchMock, invokeWorker, makeRequest, requestJson } from './helpers';
+
+let restoreFetch: (() => void) | null = null;
+
+afterEach(() => {
+  restoreFetch?.();
+  restoreFetch = null;
+});
+
+describe('worker session behavior', () => {
+  it('returns session payload for valid authenticated request', async () => {
+    restoreFetch = await installJwksFetchMock();
+    const env = buildEnv();
+    const token = await createAccessToken();
+    const request = makeRequest('/api/chat/session', {
+      method: 'GET',
+      headers: {
+        'Cf-Access-Jwt-Assertion': token
+      }
+    });
+
+    const response = await invokeWorker(request, env);
+    const body = await requestJson(response);
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(typeof body.session_id).toBe('string');
+  });
+
+  it('rejects /api/chat/respond when request session_id mismatches authenticated session', async () => {
+    restoreFetch = await installJwksFetchMock();
+    const env = buildEnv();
+    const token = await createAccessToken();
+    const request = makeRequest('/api/chat/respond', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cf-Access-Jwt-Assertion': token
+      },
+      body: JSON.stringify({
+        session_id: 'wrong-session-id',
+        messages: [
+          {
+            role: 'user',
+            content: 'session mismatch test',
+            ts: new Date().toISOString()
+          }
+        ]
+      })
+    });
+
+    const response = await invokeWorker(request, env);
+    const body = await requestJson(response);
+    const error = body.error as Record<string, unknown>;
+
+    expect(response.status).toBe(403);
+    expect(error.code).toBe('FORBIDDEN');
+    expect(error.message).toBe('Session mismatch.');
+  });
+});

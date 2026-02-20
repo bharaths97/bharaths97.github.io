@@ -25,6 +25,13 @@ npm run build
 npm run preview
 ```
 
+## Worker Tests
+
+```bash
+npm run test:worker
+npx tsc --noEmit -p worker/tsconfig.json
+```
+
 ---
 
 ## Deployment Model (What Runs Where)
@@ -141,12 +148,11 @@ Additional security checks:
 
 ## Recommended Next Steps (Now)
 
-1. Deploy Worker first and confirm `/api/chat/session` returns Access challenge when unauthenticated.
-2. Configure Access OTP + allowlist policy for the Worker API route.
-3. Deploy frontend with `VITE_CHAT_API_BASE_URL` and `VITE_CHAT_LOGOUT_URL` pointing to Worker/API domain.
-4. Execute manual flow in order:
+1. Capture final non-allowlisted-user denial evidence in logs (`403 FORBIDDEN`) and store with test artifacts.
+2. Promote sanitized Worker config to production values in Cloudflare dashboard/runtime vars.
+3. Deploy Worker + frontend from `main` and run one production smoke test:
    - redirection -> login -> session -> logout -> redirection -> session destruction.
-5. Tail logs during the run and verify expected lifecycle events and `request_id` correlation.
+4. Keep `LOG_LEVEL=info` in production and verify request_id-based troubleshooting in dashboard logs.
 
 ---
 
@@ -181,3 +187,5 @@ Log safety notes:
 - Authenticated architecture doc: `docs/ARCHITECTURE_AUTHENTICATED_V1.md`
 - Threat model (current state): `docs/THREAT_MODEL_AUTHENTICATED_V1.md`
 - Product roadmap (authenticated-first + guest deferred): `docs/ROADMAP.md`
+- Security test evidence summary: `docs/SECURITY_TESTING_SUMMARY_AUTH_V1.md`
+- Automated Worker test catalog: `docs/WORKER_AUTOMATED_TESTS_AUTH_V1.md`
