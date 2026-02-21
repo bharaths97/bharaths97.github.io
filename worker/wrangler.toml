@@ -10,34 +10,96 @@ globs = ["**/*.md"]
 # Bind this worker to your protected /api/* route in Cloudflare dashboard or here.
 # routes = [{ pattern = "your-domain.com/api/*", zone_name = "your-domain.com" }]
 
+# Env editing guide:
+# - Keep [vars] as production-safe defaults.
+# - Put local/staging/testing overrides under [env.dev.vars].
+# - Typical prod/dev differences: ACCESS_API_AUD, ALLOWED_ORIGINS, LOG_LEVEL,
+#   ENABLE_TIERED_MEMORY, and allowlisted emails.
+# - Keep secrets out of this file; set via `wrangler secret put`.
 [vars]
+# Access / Auth
 ACCESS_TEAM_DOMAIN = "your-team.cloudflareaccess.com"
 ACCESS_API_AUD = "your-access-aud"
-ALLOWED_ORIGINS = "https://bharaths97.github.io"
 ALLOWED_EMAILS = "you@example.com"
+
+# CORS / Origin policy
+ALLOWED_ORIGINS = "https://bharaths97.github.io"
+
+# Chat model runtime
 OPENAI_MODEL = "gpt-4o-mini"
+OPENAI_TEMPERATURE = "0.3"
+OPENAI_TIMEOUT_MS = "15000"
+MAX_OUTPUT_TOKENS = "400"
+
+# Request validation / safety limits
 MAX_USER_CHARS = "2000"
 MAX_CONTEXT_MESSAGES = "12"
 MAX_CONTEXT_CHARS = "12000"
 MAX_TURNS = "30"
-MAX_OUTPUT_TOKENS = "400"
-OPENAI_TIMEOUT_MS = "15000"
+
+# Tiered memory feature toggles
+ENABLE_TIERED_MEMORY = "false"
+
+# Summarizer runtime (second agent)
+OPENAI_SUMMARIZER_MODEL = "gpt-4o-mini"
+OPENAI_SUMMARIZER_TEMPERATURE = "0.1"
+OPENAI_SUMMARIZER_TIMEOUT_MS = "8000"
+OPENAI_SUMMARIZER_MAX_OUTPUT_TOKENS = "400"
+TIERED_MEMORY_SUMMARIZER_PROMPT = ""
+
+# In-memory store bounds
+MEMORY_MAX_BASE_TRUTH_ENTRIES = "120"
+MEMORY_MAX_TURN_LOG_ENTRIES = "300"
+MEMORY_MAX_RAW_WINDOW_MESSAGES = "12"
+MEMORY_MAX_FACT_CHARS = "240"
+MEMORY_MAX_SUMMARY_CHARS = "360"
+MEMORY_MAX_RAW_MESSAGE_CHARS = "4000"
+
+# Operational logging
 LOG_LEVEL = "info"
 
 # Local/dev deployment overrides.
 # Use: `npx wrangler deploy --env dev`
 [env.dev.vars]
+# Access / Auth (dev)
 ACCESS_TEAM_DOMAIN = "your-team.cloudflareaccess.com"
 ACCESS_API_AUD = "your-dev-access-aud"
-ALLOWED_ORIGINS = "https://bharaths97.github.io,http://localhost:5173"
 ALLOWED_EMAILS = "you@example.com"
+
+# CORS / Origin policy (dev)
+ALLOWED_ORIGINS = "https://bharaths97.github.io,http://localhost:5173"
+
+# Chat model runtime (dev)
 OPENAI_MODEL = "gpt-4o-mini"
+OPENAI_TEMPERATURE = "0.3"
+OPENAI_TIMEOUT_MS = "15000"
+MAX_OUTPUT_TOKENS = "400"
+
+# Request validation / safety limits (dev)
 MAX_USER_CHARS = "2000"
 MAX_CONTEXT_MESSAGES = "12"
 MAX_CONTEXT_CHARS = "12000"
 MAX_TURNS = "30"
-MAX_OUTPUT_TOKENS = "400"
-OPENAI_TIMEOUT_MS = "15000"
+
+# Tiered memory feature toggles (dev)
+ENABLE_TIERED_MEMORY = "false"
+
+# Summarizer runtime (dev)
+OPENAI_SUMMARIZER_MODEL = "gpt-4o-mini"
+OPENAI_SUMMARIZER_TEMPERATURE = "0.1"
+OPENAI_SUMMARIZER_TIMEOUT_MS = "8000"
+OPENAI_SUMMARIZER_MAX_OUTPUT_TOKENS = "400"
+TIERED_MEMORY_SUMMARIZER_PROMPT = ""
+
+# In-memory store bounds (dev)
+MEMORY_MAX_BASE_TRUTH_ENTRIES = "120"
+MEMORY_MAX_TURN_LOG_ENTRIES = "300"
+MEMORY_MAX_RAW_WINDOW_MESSAGES = "12"
+MEMORY_MAX_FACT_CHARS = "240"
+MEMORY_MAX_SUMMARY_CHARS = "360"
+MEMORY_MAX_RAW_MESSAGE_CHARS = "4000"
+
+# Operational logging (dev)
 LOG_LEVEL = "debug"
 
 

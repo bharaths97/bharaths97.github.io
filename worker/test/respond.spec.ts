@@ -117,9 +117,46 @@ describe('worker respond abuse controls', () => {
     expect(error.message).toBe('Unknown use_case_id.');
   });
 
+  it('defaults first turn to gen profile and classic memory mode when omitted', async () => {
+    restoreFetch = await installJwksAndOpenAIFetchMock();
+    const env = buildEnv({
+      ENABLE_TIERED_MEMORY: 'true'
+    });
+    const token = await createAccessToken();
+    const sessionId = await getSessionId(env, token);
+
+    const request = makeRequest('/api/chat/respond', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cf-Access-Jwt-Assertion': token
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        messages: [
+          {
+            role: 'user',
+            content: 'default mode test',
+            ts: new Date().toISOString()
+          }
+        ]
+      })
+    });
+
+    const response = await invokeWorker(request, env);
+    const body = await requestJson(response);
+    const session = body.session as Record<string, unknown>;
+
+    expect(response.status).toBe(200);
+    expect(session.use_case_id).toBe('gen');
+    expect(session.memory_mode).toBe('classic');
+  });
+
   it('rejects attempts to change use_case_id after lock token is issued', async () => {
     restoreFetch = await installJwksAndOpenAIFetchMock();
-    const env = buildEnv();
+    const env = buildEnv({
+      ENABLE_TIERED_MEMORY: 'true'
+    });
     const token = await createAccessToken();
     const sessionId = await getSessionId(env, token);
 
@@ -132,6 +169,7 @@ describe('worker respond abuse controls', () => {
       body: JSON.stringify({
         session_id: sessionId,
         use_case_id: 'gen',
+        memory_mode: 'tiered',
         messages: [
           {
             role: 'user',
@@ -145,9 +183,11 @@ describe('worker respond abuse controls', () => {
     const firstRespondResponse = await invokeWorker(firstRespondRequest, env);
     const firstRespondBody = await requestJson(firstRespondResponse);
     const lockToken = String((firstRespondBody.session as Record<string, unknown>).use_case_lock_token || '');
+    const memoryMode = String((firstRespondBody.session as Record<string, unknown>).memory_mode || '');
 
     expect(firstRespondResponse.status).toBe(200);
     expect(lockToken.length).toBeGreaterThan(10);
+    expect(memoryMode).toBe('tiered');
 
     const secondRespondRequest = makeRequest('/api/chat/respond', {
       method: 'POST',
@@ -158,6 +198,7 @@ describe('worker respond abuse controls', () => {
       body: JSON.stringify({
         session_id: sessionId,
         use_case_id: 'cat',
+        memory_mode: 'classic',
         use_case_lock_token: lockToken,
         messages: [
           {

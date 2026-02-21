@@ -31,7 +31,20 @@ export interface Env {
   USE_CASE_PROMPT_GEN?: string;
   USE_CASE_PROMPT_CAT?: string;
   USE_CASE_PROMPT_UPSC?: string;
+  ENABLE_TIERED_MEMORY?: string;
+  OPENAI_SUMMARIZER_MODEL?: string;
+  OPENAI_SUMMARIZER_TIMEOUT_MS?: string;
+  OPENAI_SUMMARIZER_TEMPERATURE?: string;
+  OPENAI_SUMMARIZER_MAX_OUTPUT_TOKENS?: string;
+  TIERED_MEMORY_SUMMARIZER_PROMPT?: string;
+  MEMORY_MAX_BASE_TRUTH_ENTRIES?: string;
+  MEMORY_MAX_TURN_LOG_ENTRIES?: string;
+  MEMORY_MAX_RAW_WINDOW_MESSAGES?: string;
+  MEMORY_MAX_FACT_CHARS?: string;
+  MEMORY_MAX_SUMMARY_CHARS?: string;
+  MEMORY_MAX_RAW_MESSAGE_CHARS?: string;
   OPENAI_MODEL?: string;
+  OPENAI_TEMPERATURE?: string;
   MAX_USER_CHARS?: string;
   MAX_CONTEXT_MESSAGES?: string;
   MAX_CONTEXT_CHARS?: string;
@@ -68,6 +81,7 @@ export interface AuthContext {
 }
 
 export type ChatRole = 'user' | 'assistant';
+export type ChatMemoryMode = 'classic' | 'tiered';
 
 export interface ChatMessage {
   role: ChatRole;
@@ -85,7 +99,12 @@ export interface ChatSessionResponse {
     control_center: boolean;
   };
   selected_use_case_id: string | null;
+  selected_memory_mode: ChatMemoryMode | null;
   use_case_locked: boolean;
+  memory_modes: Array<{
+    id: ChatMemoryMode;
+    display_name: string;
+  }>;
   prompt_profiles: Array<{
     id: string;
     display_name: string;
@@ -102,6 +121,7 @@ export interface ChatRespondRequest {
   session_id: string;
   messages: ChatMessage[];
   use_case_id?: string;
+  memory_mode?: ChatMemoryMode;
   use_case_lock_token?: string;
 }
 
@@ -121,6 +141,7 @@ export interface ChatRespondResponse {
     session_id: string;
     expires_at: string;
     use_case_id: string;
+    memory_mode: ChatMemoryMode;
     use_case_locked: boolean;
     use_case_lock_token: string;
   };
@@ -136,12 +157,36 @@ export interface ChatAdminUsageResponse {
     output_tokens: number;
     active_users: number;
   };
+  totals_by_mode: {
+    classic: {
+      requests: number;
+      input_tokens: number;
+      output_tokens: number;
+    };
+    tiered: {
+      requests: number;
+      input_tokens: number;
+      output_tokens: number;
+    };
+  };
   users: Array<{
     user_id: string;
     username: string;
     requests: number;
     input_tokens: number;
     output_tokens: number;
+    mode_breakdown: {
+      classic: {
+        requests: number;
+        input_tokens: number;
+        output_tokens: number;
+      };
+      tiered: {
+        requests: number;
+        input_tokens: number;
+        output_tokens: number;
+      };
+    };
     last_seen: string | null;
   }>;
 }

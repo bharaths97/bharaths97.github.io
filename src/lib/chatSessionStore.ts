@@ -55,6 +55,7 @@ export const loadSessionUseCaseState = (sessionId: string): ChatUseCaseState => 
   if (!raw) {
     return {
       useCaseId: null,
+      memoryMode: null,
       useCaseLockToken: null,
       isLocked: false
     };
@@ -62,14 +63,18 @@ export const loadSessionUseCaseState = (sessionId: string): ChatUseCaseState => 
 
   try {
     const parsed = JSON.parse(raw) as Partial<ChatUseCaseState>;
+    const memoryMode =
+      parsed.memoryMode === 'classic' || parsed.memoryMode === 'tiered' ? parsed.memoryMode : null;
     return {
       useCaseId: typeof parsed.useCaseId === 'string' ? parsed.useCaseId : null,
+      memoryMode,
       useCaseLockToken: typeof parsed.useCaseLockToken === 'string' ? parsed.useCaseLockToken : null,
       isLocked: parsed.isLocked === true
     };
   } catch {
     return {
       useCaseId: null,
+      memoryMode: null,
       useCaseLockToken: null,
       isLocked: false
     };

@@ -192,14 +192,22 @@ export function AdminControlPage() {
                   <p className="text-white">
                     {`requests=${usageStats.totals.requests} | input=${usageStats.totals.input_tokens} | output=${usageStats.totals.output_tokens} | active_users=${usageStats.totals.active_users}`}
                   </p>
+                  <p className="text-green-dark">
+                    {`classic: requests=${usageStats.totals_by_mode.classic.requests} | input=${usageStats.totals_by_mode.classic.input_tokens} | output=${usageStats.totals_by_mode.classic.output_tokens}`}
+                  </p>
+                  <p className="text-green-dark">
+                    {`tiered: requests=${usageStats.totals_by_mode.tiered.requests} | input=${usageStats.totals_by_mode.tiered.input_tokens} | output=${usageStats.totals_by_mode.tiered.output_tokens}`}
+                  </p>
 
                   <div className="overflow-x-auto border border-green-matrix/20 bg-black-deep/50">
-                    <table className="w-full min-w-[640px] text-xs">
+                    <table className="w-full min-w-[760px] text-xs">
                       <thead>
                         <tr className="text-green-dark border-b border-green-matrix/20">
                           <th className="px-2 py-2 text-left">user</th>
                           <th className="px-2 py-2 text-left">user_id</th>
                           <th className="px-2 py-2 text-right">requests</th>
+                          <th className="px-2 py-2 text-right">classic_req</th>
+                          <th className="px-2 py-2 text-right">tiered_req</th>
                           <th className="px-2 py-2 text-right">input</th>
                           <th className="px-2 py-2 text-right">output</th>
                           <th className="px-2 py-2 text-left">last_seen</th>
@@ -211,6 +219,8 @@ export function AdminControlPage() {
                             <td className="px-2 py-2">{user.username}</td>
                             <td className="px-2 py-2">{user.user_id}</td>
                             <td className="px-2 py-2 text-right">{user.requests}</td>
+                            <td className="px-2 py-2 text-right">{user.mode_breakdown.classic.requests}</td>
+                            <td className="px-2 py-2 text-right">{user.mode_breakdown.tiered.requests}</td>
                             <td className="px-2 py-2 text-right">{user.input_tokens}</td>
                             <td className="px-2 py-2 text-right">{user.output_tokens}</td>
                             <td className="px-2 py-2">{formatLastSeen(user.last_seen)}</td>

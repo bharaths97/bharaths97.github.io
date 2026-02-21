@@ -23,9 +23,7 @@ export const getLimits = (env: Env) => ({
   maxUserChars: parseNumeric(env.MAX_USER_CHARS, 2000, 1, 8000),
   maxContextMessages: parseNumeric(env.MAX_CONTEXT_MESSAGES, 12, 1, 40),
   maxContextChars: parseNumeric(env.MAX_CONTEXT_CHARS, 12000, 100, 60000),
-  maxTurns: parseNumeric(env.MAX_TURNS, 30, 1, 200),
-  maxOutputTokens: parseNumeric(env.MAX_OUTPUT_TOKENS, 400, 50, 4000),
-  openAiTimeoutMs: parseNumeric(env.OPENAI_TIMEOUT_MS, 15000, 1000, 60000)
+  maxTurns: parseNumeric(env.MAX_TURNS, 30, 1, 200)
 });
 
 export const isOriginAllowed = (origin: string | null, env: Env): boolean => {

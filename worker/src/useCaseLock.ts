@@ -1,10 +1,11 @@
-import type { Env } from './types';
+import type { ChatMemoryMode, Env } from './types';
 
 export const USE_CASE_LOCK_COOKIE = 'chat_use_case_lock';
 
 interface UseCaseLockPayload {
   sid: string;
   uc: string;
+  mm: ChatMemoryMode;
   exp: number;
 }
 
@@ -68,10 +69,13 @@ const parsePayload = (value: string): UseCaseLockPayload | null => {
     if (!parsed || typeof parsed !== 'object') return null;
     if (typeof parsed.sid !== 'string') return null;
     if (typeof parsed.uc !== 'string') return null;
+    const memoryMode: ChatMemoryMode =
+      parsed.mm === 'tiered' || parsed.mm === 'classic' ? parsed.mm : 'classic';
     if (typeof parsed.exp !== 'number') return null;
     return {
       sid: parsed.sid,
       uc: parsed.uc,
+      mm: memoryMode,
       exp: parsed.exp
     };
   } catch {
@@ -83,11 +87,13 @@ export const createUseCaseLockToken = async (
   env: Env,
   sessionId: string,
   useCaseId: string,
+  memoryMode: ChatMemoryMode,
   expiresAtEpochSeconds: number
 ): Promise<string> => {
   const payload: UseCaseLockPayload = {
     sid: sessionId,
     uc: useCaseId,
+    mm: memoryMode,
     exp: expiresAtEpochSeconds
   };
 
@@ -101,7 +107,7 @@ export const verifyUseCaseLockToken = async (
   token: string,
   expectedSessionId: string,
   nowEpochSeconds: number
-): Promise<{ useCaseId: string; expiresAt: number } | null> => {
+): Promise<{ useCaseId: string; memoryMode: ChatMemoryMode; expiresAt: number } | null> => {
   const [encodedPayload, signature] = token.split('.');
   if (!encodedPayload || !signature) return null;
 
@@ -117,6 +123,7 @@ export const verifyUseCaseLockToken = async (
 
   return {
     useCaseId: payload.uc,
+    memoryMode: payload.mm,
     expiresAt: payload.exp
   };
 };

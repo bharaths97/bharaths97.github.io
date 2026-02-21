@@ -19,3 +19,8 @@ worker/wrangler-test.toml
 .vscode/
 worker/.env.example
 files/
+tiered_memory_docs/
+
+# Local-only sensitive prompt variants (optional)
+worker/src/prompts/*.private.md
+worker/src/memory/prompts/*.private.md

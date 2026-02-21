@@ -18,8 +18,6 @@ interface PromptProfileDefinition {
   envKey?: 'USE_CASE_PROMPT_GEN' | 'USE_CASE_PROMPT_CAT' | 'USE_CASE_PROMPT_UPSC';
 }
 
-// TODO(manual): edit these ids/display names to match your real use-cases.
-// Keep ids stable once deployed so in-flight sessions do not break.
 const PROMPT_PROFILES: PromptProfileDefinition[] = [
   {
     id: 'gen',
@@ -44,7 +42,20 @@ const PROMPT_PROFILES: PromptProfileDefinition[] = [
   }
 ];
 
-const DEFAULT_PROMPT_PROFILE_ID = PROMPT_PROFILES[0]?.id || 'use_case_1';
+const DEFAULT_PROMPT_PROFILE_ID = PROMPT_PROFILES[0]?.id || 'gen';
+
+const resolvePromptText = (profile: PromptProfileDefinition, env: Env): string => {
+  const override = profile.envKey ? env[profile.envKey]?.trim() : '';
+  return override || profile.defaultPrompt;
+};
+
+// Backward compatibility: previously selection ids could include a "__" suffix.
+const normalizePromptProfileId = (id: string): string => {
+  const trimmed = id.trim();
+  if (!trimmed) return trimmed;
+  const [baseId] = trimmed.split('__');
+  return baseId || trimmed;
+};
 
 export const getPromptProfilesForClient = (): Array<{ id: string; display_name: string }> =>
   PROMPT_PROFILES.map((profile) => ({
@@ -54,13 +65,9 @@ export const getPromptProfilesForClient = (): Array<{ id: string; display_name: 
 
 export const getDefaultPromptProfileId = (): string => DEFAULT_PROMPT_PROFILE_ID;
 
-const resolvePromptText = (profile: PromptProfileDefinition, env: Env): string => {
-  const override = profile.envKey ? env[profile.envKey]?.trim() : '';
-  return override || profile.defaultPrompt;
-};
-
 export const getPromptProfile = (id: string, env: Env): PromptProfile | null => {
-  const profile = PROMPT_PROFILES.find((value) => value.id === id);
+  const normalizedId = normalizePromptProfileId(id);
+  const profile = PROMPT_PROFILES.find((value) => value.id === normalizedId);
   if (!profile) return null;
 
   return {

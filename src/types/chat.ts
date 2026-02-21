@@ -1,4 +1,5 @@
 export type ChatRole = 'user' | 'assistant';
+export type ChatMemoryMode = 'classic' | 'tiered';
 
 export interface ChatMessage {
   id: string;
@@ -12,8 +13,14 @@ export interface ChatUseCaseOption {
   display_name: string;
 }
 
+export interface ChatMemoryModeOption {
+  id: ChatMemoryMode;
+  display_name: string;
+}
+
 export interface ChatUseCaseState {
   useCaseId: string | null;
+  memoryMode: ChatMemoryMode | null;
   useCaseLockToken: string | null;
   isLocked: boolean;
 }

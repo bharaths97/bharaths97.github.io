@@ -15,6 +15,7 @@ interface UsageEventRow {
   user_id: string;
   username: string;
   use_case_id: string;
+  memory_mode: 'classic' | 'tiered';
   model: string;
   input_tokens: number;
   output_tokens: number;
@@ -22,6 +23,7 @@ interface UsageEventRow {
 
 const createUsageDbMock = (seed: UsageEventRow[] = []) => {
   const events = [...seed];
+  let hasMemoryModeColumn = true;
 
   return {
     events,
@@ -45,10 +47,19 @@ const createUsageDbMock = (seed: UsageEventRow[] = []) => {
               user_id: String(boundValues[2] || ''),
               username: String(boundValues[3] || ''),
               use_case_id: String(boundValues[4] || ''),
-              model: String(boundValues[5] || ''),
-              input_tokens: Number(boundValues[6] || 0),
-              output_tokens: Number(boundValues[7] || 0)
+              memory_mode: boundValues[5] === 'tiered' ? 'tiered' : 'classic',
+              model: String(boundValues[6] || ''),
+              input_tokens: Number(boundValues[7] || 0),
+              output_tokens: Number(boundValues[8] || 0)
             });
+          }
+          if (normalized.includes('alter table usage_events add column memory_mode')) {
+            hasMemoryModeColumn = true;
+            for (const event of events) {
+              if (!event.memory_mode) {
+                event.memory_mode = 'classic';
+              }
+            }
           }
           return { success: true };
         },
@@ -66,6 +77,47 @@ const createUsageDbMock = (seed: UsageEventRow[] = []) => {
           } as T;
         },
         async all<T = Record<string, unknown>>() {
+          if (normalized.includes('pragma table_info(usage_events)')) {
+            const results = [
+              { name: 'id' },
+              { name: 'event_ts' },
+              { name: 'request_id' },
+              { name: 'user_id' },
+              { name: 'username' },
+              { name: 'use_case_id' },
+              ...(hasMemoryModeColumn ? [{ name: 'memory_mode' }] : []),
+              { name: 'model' },
+              { name: 'input_tokens' },
+              { name: 'output_tokens' }
+            ];
+            return { results: results as T[] };
+          }
+
+          if (normalized.includes('group by memory_mode')) {
+            const fromTs = String(boundValues[0] || new Date(0).toISOString());
+            const fromMs = Date.parse(fromTs);
+            const filtered = events.filter((event) => Date.parse(event.event_ts) >= fromMs);
+            const modeRows: Array<{
+              memory_mode: 'classic' | 'tiered';
+              requests: number;
+              input_tokens: number;
+              output_tokens: number;
+            }> = [
+              { memory_mode: 'classic', requests: 0, input_tokens: 0, output_tokens: 0 },
+              { memory_mode: 'tiered', requests: 0, input_tokens: 0, output_tokens: 0 }
+            ];
+
+            for (const event of filtered) {
+              const bucket = modeRows.find((row) => row.memory_mode === event.memory_mode);
+              if (!bucket) continue;
+              bucket.requests += 1;
+              bucket.input_tokens += event.input_tokens;
+              bucket.output_tokens += event.output_tokens;
+            }
+
+            return { results: modeRows.filter((row) => row.requests > 0) as T[] };
+          }
+
           if (!normalized.includes('group by user_id')) {
             return { results: [] as T[] };
           }
@@ -80,11 +132,17 @@ const createUsageDbMock = (seed: UsageEventRow[] = []) => {
             {
               user_id: string;
               username: string;
-              requests: number;
-              input_tokens: number;
-              output_tokens: number;
-              last_seen: string;
-            }
+                requests: number;
+                input_tokens: number;
+                output_tokens: number;
+                classic_requests: number;
+                classic_input_tokens: number;
+                classic_output_tokens: number;
+                tiered_requests: number;
+                tiered_input_tokens: number;
+                tiered_output_tokens: number;
+                last_seen: string;
+              }
           >();
 
           for (const event of filtered) {
@@ -94,12 +152,27 @@ const createUsageDbMock = (seed: UsageEventRow[] = []) => {
               requests: 0,
               input_tokens: 0,
               output_tokens: 0,
+              classic_requests: 0,
+              classic_input_tokens: 0,
+              classic_output_tokens: 0,
+              tiered_requests: 0,
+              tiered_input_tokens: 0,
+              tiered_output_tokens: 0,
               last_seen: event.event_ts
             };
 
             existing.requests += 1;
             existing.input_tokens += event.input_tokens;
             existing.output_tokens += event.output_tokens;
+            if (event.memory_mode === 'tiered') {
+              existing.tiered_requests += 1;
+              existing.tiered_input_tokens += event.input_tokens;
+              existing.tiered_output_tokens += event.output_tokens;
+            } else {
+              existing.classic_requests += 1;
+              existing.classic_input_tokens += event.input_tokens;
+              existing.classic_output_tokens += event.output_tokens;
+            }
             if (Date.parse(event.event_ts) > Date.parse(existing.last_seen)) {
               existing.last_seen = event.event_ts;
             }
@@ -149,6 +222,7 @@ describe('worker admin usage and tracking', () => {
         user_id: 'usr_admin',
         username: 'admin_user',
         use_case_id: 'gen',
+        memory_mode: 'classic',
         model: 'gpt-4o-mini',
         input_tokens: 12,
         output_tokens: 5
@@ -181,6 +255,7 @@ describe('worker admin usage and tracking', () => {
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
     expect((body.totals as Record<string, unknown>).requests).toBe(1);
+    expect((body.totals_by_mode as Record<string, unknown>).classic).toBeTruthy();
     expect(Array.isArray(body.users)).toBe(true);
   });
 
@@ -257,6 +332,7 @@ describe('worker admin usage and tracking', () => {
     expect(db.events.length).toBe(1);
     expect(db.events[0].user_id).toBe('usr_writer');
     expect(db.events[0].username).toBe('writer_user');
+    expect(db.events[0].memory_mode).toBe('classic');
     expect(db.events[0].input_tokens).toBe(42);
     expect(db.events[0].output_tokens).toBe(11);
   });

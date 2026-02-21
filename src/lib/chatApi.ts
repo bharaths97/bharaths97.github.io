@@ -1,4 +1,4 @@
-import type { ChatRole, ChatUseCaseOption } from '../types/chat';
+import type { ChatMemoryMode, ChatMemoryModeOption, ChatRole, ChatUseCaseOption } from '../types/chat';
 import { buildChatApiUrl } from './chatRuntime';
 
 export interface ChatSessionResponse {
@@ -11,7 +11,9 @@ export interface ChatSessionResponse {
     control_center?: boolean;
   };
   selected_use_case_id?: string | null;
+  selected_memory_mode?: ChatMemoryMode | null;
   use_case_locked?: boolean;
+  memory_modes?: ChatMemoryModeOption[];
   prompt_profiles?: ChatUseCaseOption[];
   expires_at: string;
   limits?: {
@@ -31,6 +33,7 @@ export interface ChatRespondRequest {
   session_id: string;
   messages: ChatRespondRequestMessage[];
   use_case_id?: string;
+  memory_mode?: ChatMemoryMode;
   use_case_lock_token?: string;
 }
 
@@ -50,6 +53,7 @@ export interface ChatRespondResponse {
     session_id: string;
     expires_at: string;
     use_case_id?: string;
+    memory_mode?: ChatMemoryMode;
     use_case_locked?: boolean;
     use_case_lock_token?: string;
   };
@@ -65,12 +69,36 @@ export interface ChatAdminUsageResponse {
     output_tokens: number;
     active_users: number;
   };
+  totals_by_mode: {
+    classic: {
+      requests: number;
+      input_tokens: number;
+      output_tokens: number;
+    };
+    tiered: {
+      requests: number;
+      input_tokens: number;
+      output_tokens: number;
+    };
+  };
   users: Array<{
     user_id: string;
     username: string;
     requests: number;
     input_tokens: number;
     output_tokens: number;
+    mode_breakdown: {
+      classic: {
+        requests: number;
+        input_tokens: number;
+        output_tokens: number;
+      };
+      tiered: {
+        requests: number;
+        input_tokens: number;
+        output_tokens: number;
+      };
+    };
     last_seen: string | null;
   }>;
 }

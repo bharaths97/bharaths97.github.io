@@ -55,6 +55,18 @@ const validateUseCaseLockToken = (token: unknown): string | undefined => {
   return trimmed;
 };
 
+const validateMemoryMode = (memoryMode: unknown): 'classic' | 'tiered' | undefined => {
+  if (typeof memoryMode === 'undefined') {
+    return undefined;
+  }
+
+  if (memoryMode !== 'classic' && memoryMode !== 'tiered') {
+    throw new ValidationError('Invalid memory_mode.');
+  }
+
+  return memoryMode;
+};
+
 export const validateSessionId = (sessionId: unknown): string => {
   if (typeof sessionId !== 'string') {
     throw new ValidationError('Invalid session id.');
@@ -94,6 +106,7 @@ export const validateRespondPayload = (
   const sessionId = validateSessionId(body.session_id);
   const rawMessages = body.messages;
   const useCaseId = validateUseCaseId(body.use_case_id);
+  const memoryMode = validateMemoryMode(body.memory_mode);
   const useCaseLockToken = validateUseCaseLockToken(body.use_case_lock_token);
 
   if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
@@ -156,6 +169,7 @@ export const validateRespondPayload = (
     session_id: sessionId,
     messages,
     use_case_id: useCaseId,
+    memory_mode: memoryMode,
     use_case_lock_token: useCaseLockToken
   };
 };

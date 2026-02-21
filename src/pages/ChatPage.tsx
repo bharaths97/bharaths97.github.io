@@ -15,7 +15,7 @@ import {
   saveSessionUseCaseState,
   setActiveSessionId
 } from '../lib/chatSessionStore';
-import type { ChatMessage, ChatUseCaseOption } from '../types/chat';
+import type { ChatMemoryMode, ChatMemoryModeOption, ChatMessage, ChatUseCaseOption } from '../types/chat';
 
 const newMessage = (role: ChatMessage['role'], content: string): ChatMessage => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -49,7 +49,9 @@ export function ChatPage() {
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [useCases, setUseCases] = useState<ChatUseCaseOption[]>([]);
+  const [memoryModes, setMemoryModes] = useState<ChatMemoryModeOption[]>([]);
   const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | null>(null);
+  const [selectedMemoryMode, setSelectedMemoryMode] = useState<ChatMemoryMode | null>(null);
   const [useCaseLockToken, setUseCaseLockToken] = useState<string | null>(null);
   const [isUseCaseLocked, setIsUseCaseLocked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -73,13 +75,24 @@ export function ChatPage() {
       setMessages(loadSessionMessages(nextSessionId));
 
       const availableUseCases = Array.isArray(session.prompt_profiles) ? session.prompt_profiles : [];
+      const availableMemoryModes = Array.isArray(session.memory_modes) ? session.memory_modes : [];
       const storedUseCaseState = loadSessionUseCaseState(nextSessionId);
-      const fallbackUseCaseId = availableUseCases[0]?.id || null;
+      const fallbackUseCaseId = availableUseCases.find((option) => option.id === 'gen')?.id || availableUseCases[0]?.id || null;
+      const fallbackMemoryMode =
+        availableMemoryModes.find((option) => option.id === 'classic')?.id || availableMemoryModes[0]?.id || 'classic';
       const serverSelectedUseCaseId = typeof session.selected_use_case_id === 'string' ? session.selected_use_case_id : null;
+      const serverSelectedMemoryMode =
+        session.selected_memory_mode === 'classic' || session.selected_memory_mode === 'tiered'
+          ? session.selected_memory_mode
+          : null;
       const effectiveUseCaseId = serverSelectedUseCaseId || storedUseCaseState.useCaseId || fallbackUseCaseId;
+      const effectiveMemoryMode =
+        serverSelectedMemoryMode || storedUseCaseState.memoryMode || fallbackMemoryMode;
 
       setUseCases(availableUseCases);
+      setMemoryModes(availableMemoryModes.length > 0 ? availableMemoryModes : [{ id: 'classic', display_name: 'Speak Small' }]);
       setSelectedUseCaseId(effectiveUseCaseId);
+      setSelectedMemoryMode(effectiveMemoryMode);
       setUseCaseLockToken(storedUseCaseState.useCaseLockToken);
       setIsUseCaseLocked(session.use_case_locked === true || storedUseCaseState.isLocked);
 
@@ -96,7 +109,9 @@ export function ChatPage() {
       setSessionId(null);
       setMessages([]);
       setUseCases([]);
+      setMemoryModes([]);
       setSelectedUseCaseId(null);
+      setSelectedMemoryMode(null);
       setUseCaseLockToken(null);
       setIsUseCaseLocked(false);
       setIsAdmin(false);
@@ -119,10 +134,11 @@ export function ChatPage() {
     if (!sessionId) return;
     saveSessionUseCaseState(sessionId, {
       useCaseId: selectedUseCaseId,
+      memoryMode: selectedMemoryMode,
       useCaseLockToken,
       isLocked: isUseCaseLocked
     });
-  }, [sessionId, selectedUseCaseId, useCaseLockToken, isUseCaseLocked]);
+  }, [sessionId, selectedUseCaseId, selectedMemoryMode, useCaseLockToken, isUseCaseLocked]);
 
   const canSend = useMemo(
     () =>
@@ -130,8 +146,9 @@ export function ChatPage() {
       !isThinking &&
       !isSessionLoading &&
       Boolean(sessionId) &&
-      (useCases.length === 0 || Boolean(selectedUseCaseId)),
-    [input, isThinking, isSessionLoading, sessionId, selectedUseCaseId, useCases.length]
+      (useCases.length === 0 || Boolean(selectedUseCaseId)) &&
+      (memoryModes.length === 0 || Boolean(selectedMemoryMode)),
+    [input, isThinking, isSessionLoading, sessionId, selectedUseCaseId, selectedMemoryMode, useCases.length, memoryModes.length]
   );
 
   const handleSend = async () => {
@@ -150,6 +167,7 @@ export function ChatPage() {
       const response = await postChatRespond({
         session_id: sessionId,
         use_case_id: selectedUseCaseId || undefined,
+        memory_mode: selectedMemoryMode || undefined,
         use_case_lock_token: useCaseLockToken || undefined,
         messages: nextMessages.map((message) => ({
           role: message.role,
@@ -165,10 +183,13 @@ export function ChatPage() {
       }
 
       const nextUseCaseId = response.session?.use_case_id || selectedUseCaseId;
+      const nextMemoryMode =
+        response.session?.memory_mode || selectedMemoryMode || 'classic';
       const nextUseCaseLockToken = response.session?.use_case_lock_token || useCaseLockToken;
       const nextUseCaseLocked = response.session?.use_case_locked === true || Boolean(nextUseCaseLockToken);
 
       setSelectedUseCaseId(nextUseCaseId || null);
+      setSelectedMemoryMode(nextMemoryMode || null);
       setUseCaseLockToken(nextUseCaseLockToken || null);
       setIsUseCaseLocked(nextUseCaseLocked);
       setMessages((prev) => [...prev, newMessage('assistant', assistantText)]);
@@ -241,6 +262,14 @@ export function ChatPage() {
             selectedUseCaseId={selectedUseCaseId}
             onUseCaseChange={(nextUseCaseId) => {
               setSelectedUseCaseId(nextUseCaseId);
+              if (!isUseCaseLocked) {
+                setUseCaseLockToken(null);
+              }
+            }}
+            memoryModes={memoryModes}
+            selectedMemoryMode={selectedMemoryMode}
+            onMemoryModeChange={(nextMemoryMode) => {
+              setSelectedMemoryMode(nextMemoryMode);
               if (!isUseCaseLocked) {
                 setUseCaseLockToken(null);
               }

@@ -20,10 +20,14 @@ Expected JSON:
 }
 ```
 
+Updated: 2026-02-21
+
 ## Workstreams
 
 ### W1. Memory runtime layer (backend)
-Add new module set under `worker/src/memory/`:
+Status: Implemented
+
+Implemented module set under `worker/src/memory/`:
 - `store.ts`
   - per-session in-memory store
   - structure: `baseTruth[]`, `turnLog[]`, `rawWindow[]`, `revision`, `expiresAt`
@@ -36,12 +40,16 @@ Add new module set under `worker/src/memory/`:
   - per-session async mutex (prevent phase race)
 
 ### W2. Summarizer integration
-Add `worker/src/memory/summarizer.ts`:
+Status: Implemented (baseline)
+
+Implemented in `worker/src/memory/summarizer.ts`:
 - separate model selection (env var)
 - strict JSON-only parse + fallback path
 - timeout + retry-once behavior
 
 ### W3. Respond flow changes
+Status: Implemented
+
 In `worker/src/index.ts` (`POST /api/chat/respond`):
 - Phase 1 (chat):
   - build context from `baseTruth + turnLog + rawWindow + latest user`
@@ -53,10 +61,26 @@ In `worker/src/index.ts` (`POST /api/chat/respond`):
   - update rawWindow
 
 ### W4. Prompt templates
-- `worker/src/memory/prompts/chat-context.ts`
+Status: Implemented
+
+- `worker/src/memory/prompts/ChatContextTemplate.md`
+- `worker/src/memory/prompts/Summarizer.md`
+- `worker/src/memory/prompts/chatContext.ts`
 - `worker/src/memory/prompts/summarizer.ts`
 
+### W4.1 Runtime config centralization
+Status: Implemented
+
+- `worker/src/runtimeConfig.ts`
+- `worker/src/index.ts` now consumes one composed runtime config object (limits + AI + memory) instead of scattered config reads.
+
 ### W5. Observability and performance
+Status: Partially implemented
+
+Implemented:
+- log events for memory updates/failures in `worker/src/index.ts` (`memory.turn.updated`, `memory.turn.update_failed`)
+
+Pending:
 - metrics per turn:
   - chat latency
   - summarizer latency
@@ -65,11 +89,15 @@ In `worker/src/index.ts` (`POST /api/chat/respond`):
 - logging: no raw content in production logs
 
 ### W6. Frontend contract strategy
+Status: Implemented (non-breaking mode)
+
 Two options:
 - Non-breaking phase: keep current `messages[]` API while backend starts internal memory maintenance.
 - Migration phase: switch to minimal payload (`message`) once server-memory is proven.
 
 ### W7. Security testing and hardening
+Status: In progress
+
 - Add explicit guards in summarizer pipeline:
   - strict JSON schema validation for summarizer output
   - max-length clamps on summaries and diff arrays
@@ -85,11 +113,10 @@ Two options:
   - attempts to insert synthetic identities, roles, or policy overrides.
 
 ## Suggested file-level change list
-- `worker/src/index.ts`
-- `worker/src/types.ts`
-- `worker/src/openai.ts` (if adding structured output helpers)
-- new: `worker/src/memory/*`
-- new tests: `worker/test/memory/*.spec.ts`
+- `worker/src/index.ts` (updated)
+- `worker/src/types.ts` (updated env contract)
+- `worker/src/memory/*` (added)
+- `worker/test/memory/*.spec.ts` (added)
 
 ## Performance experiment checkpoints
 1. Baseline: current full-history flow latency + token usage.

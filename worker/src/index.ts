@@ -5,14 +5,14 @@ import { getDefaultPromptProfileId, getPromptProfile, getPromptProfilesForClient
 import { enforceRespondRateLimit } from './rateLimit';
 import {
   errorResponse,
-  getLimits,
   handleOptions,
   isOriginAllowed,
   jsonResponse,
   noContentResponse,
   redirectResponse
 } from './security';
-import type { ChatAdminUsageResponse, ChatRespondResponse, ChatSessionResponse, Env } from './types';
+import type { ChatAdminUsageResponse, ChatMemoryMode, ChatRespondResponse, ChatSessionResponse, Env } from './types';
+import { getDefaultMemoryMode, isMemoryModeAvailable } from './memoryModes';
 import {
   buildUseCaseLockClearCookie,
   buildUseCaseLockSetCookie,
@@ -23,6 +23,23 @@ import {
 } from './useCaseLock';
 import { getUsageSummary, hasUsageDb, recordUsageEvent } from './usageStore';
 import { validateResetPayload, validateRespondPayload, ValidationError } from './validation';
+import { applyBaseTruthDiff } from './memory/diff';
+import { withSessionMemoryLock } from './memory/locks';
+import { buildTieredChatSystemPrompt } from './memory/prompts/chatContext';
+import {
+  appendSessionRawExchange,
+  appendSessionTurnSummary,
+  clearSessionMemory,
+  evictExpiredSessions,
+  getOrCreateSessionMemory,
+  setSessionBaseTruth
+} from './memory/store';
+import { summarizeTurn } from './memory/summarizer';
+import { getRuntimeConfig, type RuntimeConfig } from './runtimeConfig';
+
+interface WorkerExecutionContext {
+  waitUntil?(promise: Promise<unknown>): void;
+}
 
 const badRoute = (origin: string | null, env: Env, requestId: string): Response => {
   return errorResponse(origin, env, 404, 'NOT_FOUND', 'Route not found.', requestId);
@@ -39,8 +56,10 @@ const toSessionResponse = (
   username: string,
   controlCenterEnabled: boolean,
   exp: number,
-  limits: ReturnType<typeof getLimits>,
+  limits: RuntimeConfig['limits'],
+  memoryModes: Array<{ id: ChatMemoryMode; display_name: string }>,
   selectedUseCaseId: string | null,
+  selectedMemoryMode: ChatMemoryMode | null,
   useCaseLocked: boolean
 ): ChatSessionResponse => ({
   ok: true,
@@ -52,7 +71,9 @@ const toSessionResponse = (
     control_center: controlCenterEnabled
   },
   selected_use_case_id: selectedUseCaseId,
+  selected_memory_mode: selectedMemoryMode,
   use_case_locked: useCaseLocked,
+  memory_modes: memoryModes,
   prompt_profiles: getPromptProfilesForClient(),
   expires_at: new Date(exp * 1000).toISOString(),
   limits: {
@@ -114,7 +135,7 @@ const getSafeReturnTo = (url: URL, env: Env): string => {
 };
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: WorkerExecutionContext): Promise<Response> {
     const startedAt = Date.now();
     const url = new URL(request.url);
     const origin = request.headers.get('Origin');
@@ -137,6 +158,7 @@ export default {
       }
 
       ensureAllowedOrigin(origin, env);
+      const runtimeConfig = getRuntimeConfig(env);
 
       if (url.pathname === '/api/chat/login' && request.method === 'GET') {
         const auth = await authenticateRequest(request, env);
@@ -154,13 +176,14 @@ export default {
       if (url.pathname === '/api/chat/session' && request.method === 'GET') {
         const auth = await authenticateRequest(request, env);
         const sessionId = await deriveSessionId(auth, env);
-        const limits = getLimits(env);
         const nowEpochSeconds = Math.floor(Date.now() / 1000);
         const lockToken = parseCookie(request, USE_CASE_LOCK_COOKIE);
         const verifiedLock = lockToken
           ? await verifyUseCaseLockToken(env, lockToken, sessionId, nowEpochSeconds)
           : null;
-        const selectedUseCaseId = verifiedLock?.useCaseId || null;
+        const selectedProfile = verifiedLock ? getPromptProfile(verifiedLock.useCaseId, env) : null;
+        const selectedUseCaseId = selectedProfile?.id || null;
+        const selectedMemoryMode = verifiedLock?.memoryMode || null;
         const useCaseLocked = Boolean(verifiedLock);
 
         logger.info('chat.session.success', {
@@ -179,8 +202,10 @@ export default {
             auth.identity.username,
             auth.identity.role === 'admin',
             auth.claims.exp,
-            limits,
+            runtimeConfig.limits,
+            runtimeConfig.memoryModes,
             selectedUseCaseId,
+            selectedMemoryMode,
             useCaseLocked
           ),
           200
@@ -233,7 +258,6 @@ export default {
         const auth = await authenticateRequest(request, env);
         await enforceRespondRateLimit(auth, env);
         const expectedSessionId = await deriveSessionId(auth, env);
-        const limits = getLimits(env);
 
         let requestBody: unknown;
         try {
@@ -243,10 +267,10 @@ export default {
         }
 
         const payload = validateRespondPayload(requestBody, {
-          maxUserChars: limits.maxUserChars,
-          maxContextMessages: limits.maxContextMessages,
-          maxContextChars: limits.maxContextChars,
-          maxTurns: limits.maxTurns
+          maxUserChars: runtimeConfig.limits.maxUserChars,
+          maxContextMessages: runtimeConfig.limits.maxContextMessages,
+          maxContextChars: runtimeConfig.limits.maxContextChars,
+          maxTurns: runtimeConfig.limits.maxTurns
         });
 
         if (payload.session_id !== expectedSessionId) {
@@ -262,42 +286,106 @@ export default {
           : null;
 
         let resolvedUseCaseId: string;
+        let resolvedMemoryMode: ChatMemoryMode;
         let useCaseLockToken: string;
         let responseSetCookie: string | null = null;
+        let promptProfile = null as ReturnType<typeof getPromptProfile>;
 
         if (verifiedLock) {
-          resolvedUseCaseId = verifiedLock.useCaseId;
-          useCaseLockToken = suppliedLockToken as string;
+          const lockedProfile = getPromptProfile(verifiedLock.useCaseId, env);
+          if (!lockedProfile) {
+            throw new ValidationError('Unknown use_case_id.');
+          }
 
-          if (payload.use_case_id && payload.use_case_id !== resolvedUseCaseId) {
-            throw new ValidationError('use_case_id is locked for this session.');
+          resolvedUseCaseId = lockedProfile.id;
+          resolvedMemoryMode = verifiedLock.memoryMode;
+          useCaseLockToken = suppliedLockToken as string;
+          promptProfile = lockedProfile;
+
+          if (payload.use_case_id) {
+            const requestedProfile = getPromptProfile(payload.use_case_id, env);
+            if (!requestedProfile) {
+              throw new ValidationError('Unknown use_case_id.');
+            }
+
+            if (requestedProfile.id !== resolvedUseCaseId) {
+              throw new ValidationError('use_case_id is locked for this session.');
+            }
+          }
+
+          if (payload.memory_mode && payload.memory_mode !== resolvedMemoryMode) {
+            throw new ValidationError('memory_mode is locked for this session.');
           }
         } else {
           if (!isFirstTurn) {
             throw new ValidationError('Missing or invalid use_case_lock_token. Start a new session.');
           }
 
-          resolvedUseCaseId = payload.use_case_id || getDefaultPromptProfileId();
-
-          if (!getPromptProfile(resolvedUseCaseId, env)) {
+          const requestedUseCaseId = payload.use_case_id || getDefaultPromptProfileId();
+          const requestedProfile = getPromptProfile(requestedUseCaseId, env);
+          if (!requestedProfile) {
             throw new ValidationError('Unknown use_case_id.');
           }
 
-          useCaseLockToken = await createUseCaseLockToken(env, expectedSessionId, resolvedUseCaseId, auth.claims.exp);
+          resolvedUseCaseId = requestedProfile.id;
+          resolvedMemoryMode = payload.memory_mode || getDefaultMemoryMode();
+          promptProfile = requestedProfile;
+
+          useCaseLockToken = await createUseCaseLockToken(
+            env,
+            expectedSessionId,
+            resolvedUseCaseId,
+            resolvedMemoryMode,
+            auth.claims.exp
+          );
           const maxAgeSeconds = Math.max(1, auth.claims.exp - nowEpochSeconds);
           responseSetCookie = buildUseCaseLockSetCookie(useCaseLockToken, maxAgeSeconds);
         }
 
-        const promptProfile = getPromptProfile(resolvedUseCaseId, env);
         if (!promptProfile) {
           throw new ValidationError('Unknown use_case_id.');
         }
 
-        const assistant = await generateAssistantReply(env, payload.messages, {
-          systemPrompt: promptProfile.systemPrompt,
-          maxContextMessages: limits.maxContextMessages,
-          maxOutputTokens: limits.maxOutputTokens,
-          timeoutMs: limits.openAiTimeoutMs
+        if (!isMemoryModeAvailable(resolvedMemoryMode, runtimeConfig.memory.enabled)) {
+          throw new ValidationError('Tiered memory mode is disabled.');
+        }
+
+        const isTieredMemoryActive = runtimeConfig.memory.enabled && resolvedMemoryMode === 'tiered';
+        if (isTieredMemoryActive) {
+          evictExpiredSessions(Date.now());
+        }
+
+        let messagesForModel = payload.messages;
+        let systemPromptForModel = promptProfile.systemPrompt;
+        let sessionMemory = null;
+
+        if (isTieredMemoryActive) {
+          sessionMemory = getOrCreateSessionMemory({
+            sessionId: expectedSessionId,
+            userId: auth.identity.user_id,
+            expiresAtMs: auth.claims.exp * 1000,
+            limits: runtimeConfig.memory.storeLimits
+          });
+
+          const latestUser = payload.messages[payload.messages.length - 1];
+          messagesForModel = [
+            ...sessionMemory.rawWindow.map((message) => ({
+              role: message.role,
+              content: message.content,
+              ts: message.ts
+            })),
+            latestUser
+          ];
+          systemPromptForModel = buildTieredChatSystemPrompt(promptProfile.systemPrompt, sessionMemory);
+        }
+
+        const assistant = await generateAssistantReply(env, messagesForModel, {
+          systemPrompt: systemPromptForModel,
+          model: runtimeConfig.ai.chat.model,
+          temperature: runtimeConfig.ai.chat.temperature,
+          maxContextMessages: runtimeConfig.limits.maxContextMessages,
+          maxOutputTokens: runtimeConfig.ai.chat.maxOutputTokens,
+          timeoutMs: runtimeConfig.ai.chat.timeoutMs
         });
 
         const response: ChatRespondResponse = {
@@ -312,6 +400,7 @@ export default {
             session_id: expectedSessionId,
             expires_at: new Date(auth.claims.exp * 1000).toISOString(),
             use_case_id: resolvedUseCaseId,
+            memory_mode: resolvedMemoryMode,
             use_case_locked: true,
             use_case_lock_token: useCaseLockToken
           }
@@ -322,11 +411,93 @@ export default {
           email_domain: emailDomain(auth.email),
           user_id: auth.identity.user_id,
           use_case_id: resolvedUseCaseId,
+          memory_mode: resolvedMemoryMode,
           model: response.usage?.model,
           input_tokens: response.usage?.input_tokens,
           output_tokens: response.usage?.output_tokens,
           duration_ms: Date.now() - startedAt
         });
+
+        if (isTieredMemoryActive) {
+          const latestUser = payload.messages[payload.messages.length - 1];
+          const updateMemory = async () => {
+            await withSessionMemoryLock(expectedSessionId, auth.identity.user_id, async () => {
+              const state = getOrCreateSessionMemory({
+                sessionId: expectedSessionId,
+                userId: auth.identity.user_id,
+                expiresAtMs: auth.claims.exp * 1000,
+                limits: runtimeConfig.memory.storeLimits
+              });
+
+              const summary = await summarizeTurn(env, {
+                userMessage: latestUser.content,
+                assistantMessage: assistant.content,
+                baseTruth: state.baseTruth,
+                model: runtimeConfig.ai.summarizer.model,
+                temperature: runtimeConfig.ai.summarizer.temperature,
+                timeoutMs: runtimeConfig.ai.summarizer.timeoutMs,
+                maxOutputTokens: runtimeConfig.ai.summarizer.maxOutputTokens,
+                maxSummaryChars: runtimeConfig.memory.storeLimits.maxSummaryChars,
+                systemPromptOverride: runtimeConfig.ai.summarizer.systemPromptOverride
+              });
+
+              const diffApplied = applyBaseTruthDiff(state.baseTruth, summary.diff, {
+                maxBaseTruthEntries: runtimeConfig.memory.storeLimits.maxBaseTruthEntries,
+                maxFactChars: runtimeConfig.memory.storeLimits.maxFactChars
+              });
+
+              setSessionBaseTruth(state, diffApplied.nextBaseTruth, runtimeConfig.memory.storeLimits);
+              appendSessionTurnSummary(
+                state,
+                {
+                  userSummary: summary.userSummary,
+                  assistantSummary: summary.assistantSummary,
+                  ts: response.assistant_message.ts
+                },
+                runtimeConfig.memory.storeLimits
+              );
+              appendSessionRawExchange(
+                state,
+                {
+                  userMessage: latestUser.content,
+                  assistantMessage: assistant.content,
+                  userTs: latestUser.ts,
+                  assistantTs: response.assistant_message.ts
+                },
+                runtimeConfig.memory.storeLimits
+              );
+
+              logger.info('memory.turn.updated', {
+                user_id: auth.identity.user_id,
+                mode: summary.mode,
+                complexity: summary.complexity,
+                base_truth_entries: state.baseTruth.length,
+                turn_log_entries: state.turnLog.length,
+                raw_window_messages: state.rawWindow.length
+              });
+            });
+          };
+
+          if (ctx?.waitUntil) {
+            ctx.waitUntil(
+              updateMemory().catch((error) => {
+                logger.warn('memory.turn.update_failed', {
+                  user_id: auth.identity.user_id,
+                  reason: error instanceof Error ? error.message : 'unknown'
+                });
+              })
+            );
+          } else {
+            try {
+              await updateMemory();
+            } catch (error) {
+              logger.warn('memory.turn.update_failed', {
+                user_id: auth.identity.user_id,
+                reason: error instanceof Error ? error.message : 'unknown'
+              });
+            }
+          }
+        }
 
         if (hasUsageDb(env)) {
           try {
@@ -335,7 +506,8 @@ export default {
               userId: auth.identity.user_id,
               username: auth.identity.username,
               useCaseId: resolvedUseCaseId,
-              model: response.usage?.model || env.OPENAI_MODEL?.trim() || 'gpt-4o-mini',
+              memoryMode: resolvedMemoryMode,
+              model: response.usage?.model || runtimeConfig.ai.chat.model,
               inputTokens: response.usage?.input_tokens || 0,
               outputTokens: response.usage?.output_tokens || 0,
               eventTs: new Date().toISOString()
@@ -366,6 +538,8 @@ export default {
         if (payload.sessionId !== expectedSessionId) {
           throw new AuthError('Session mismatch.', 403, 'FORBIDDEN');
         }
+
+        clearSessionMemory(expectedSessionId, auth.identity.user_id);
 
         logger.info('chat.reset.success', {
           subject_prefix: subjectPrefix(auth.claims.sub),

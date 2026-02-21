@@ -33,6 +33,9 @@ describe('worker session behavior', () => {
       username: 'allowed_user'
     });
     expect((body.user as Record<string, unknown>).email).toBeUndefined();
+    expect(body.selected_memory_mode).toBeNull();
+    expect(Array.isArray(body.memory_modes)).toBe(true);
+    expect((body.memory_modes as Array<{ id: string }>)[0]?.id).toBe('classic');
   });
 
   it('returns mapped username when USER_DIRECTORY_JSON is configured', async () => {

@@ -22,13 +22,13 @@ export class UpstreamError extends Error {
   }
 }
 
-const getModel = (env: Env): string => env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
-
 export const generateAssistantReply = async (
   env: Env,
   messages: ChatMessage[],
   options: {
     systemPrompt: string;
+    model: string;
+    temperature: number;
     maxContextMessages: number;
     maxOutputTokens: number;
     timeoutMs: number;
@@ -41,7 +41,7 @@ export const generateAssistantReply = async (
     output_tokens?: number;
   };
 }> => {
-  const model = getModel(env);
+  const model = options.model.trim() || 'gpt-4o-mini';
   const context = messages.slice(-options.maxContextMessages);
 
   const payload = {
@@ -50,7 +50,7 @@ export const generateAssistantReply = async (
       { role: 'system', content: options.systemPrompt },
       ...context.map((message) => ({ role: message.role, content: message.content }))
     ],
-    temperature: 0.3,
+    temperature: options.temperature,
     max_completion_tokens: options.maxOutputTokens
   };
 
