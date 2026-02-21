@@ -26,6 +26,9 @@ describe('worker session behavior', () => {
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(typeof body.session_id).toBe('string');
+    expect(body.capabilities).toEqual({
+      control_center: false
+    });
     expect(body.user).toEqual({
       username: 'allowed_user'
     });
@@ -57,6 +60,9 @@ describe('worker session behavior', () => {
     const body = await requestJson(response);
 
     expect(response.status).toBe(200);
+    expect(body.capabilities).toEqual({
+      control_center: true
+    });
     expect(body.user).toEqual({
       username: 'bharath'
     });

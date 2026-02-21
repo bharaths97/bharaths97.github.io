@@ -2,14 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChatComposer } from '../components/chat/ChatComposer';
 import { ChatTopBar } from '../components/chat/ChatTopBar';
 import { ChatTranscript } from '../components/chat/ChatTranscript';
-import {
-  ChatApiError,
-  type ChatAdminUsageResponse,
-  getAdminUsageSummary,
-  getChatSession,
-  postChatReset,
-  postChatRespond
-} from '../lib/chatApi';
+import { ChatApiError, getChatSession, postChatReset, postChatRespond } from '../lib/chatApi';
 import { getChatAccessLoginUrl, isExternalChatApiConfigured, logoutFromAccessAndRedirect } from '../lib/chatRuntime';
 import {
   clearAllChatStorage,
@@ -60,49 +53,6 @@ export function ChatPage() {
   const [useCaseLockToken, setUseCaseLockToken] = useState<string | null>(null);
   const [isUseCaseLocked, setIsUseCaseLocked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isAdminStatsLoading, setIsAdminStatsLoading] = useState(false);
-  const [adminStatsError, setAdminStatsError] = useState<string | null>(null);
-  const [adminUsageStats, setAdminUsageStats] = useState<ChatAdminUsageResponse | null>(null);
-
-  const loadAdminUsageStats = useCallback(
-    async (options?: { silent?: boolean }) => {
-      if (!options?.silent) {
-        setIsAdminStatsLoading(true);
-      }
-      setAdminStatsError(null);
-
-      try {
-        const summary = await getAdminUsageSummary({ days: 7, limit: 25 });
-        setIsAdmin(true);
-        setAdminUsageStats(summary);
-      } catch (error) {
-        if (error instanceof ChatApiError && error.status === 403) {
-          setIsAdmin(false);
-          setAdminUsageStats(null);
-          return;
-        }
-
-        if (error instanceof ChatApiError && error.status === 401) {
-          setIsAdmin(false);
-          setAdminUsageStats(null);
-          setAdminStatsError(error.message);
-          return;
-        }
-
-        if (error instanceof ChatApiError && error.status === 503) {
-          setIsAdmin(true);
-          setAdminUsageStats(null);
-          setAdminStatsError(error.message);
-          return;
-        }
-
-        setAdminStatsError('Unable to load admin stats right now.');
-      } finally {
-        setIsAdminStatsLoading(false);
-      }
-    },
-    []
-  );
 
   const initializeSession = useCallback(async () => {
     setIsSessionLoading(true);
@@ -135,7 +85,7 @@ export function ChatPage() {
 
       const nextUsername = session.user.username?.trim() || 'authorized_user';
       setUsername(nextUsername);
-      await loadAdminUsageStats({ silent: true });
+      setIsAdmin(session.capabilities?.control_center === true);
     } catch (error) {
       if (shouldRedirectToAccessLogin(error)) {
         clearAllChatStorage();
@@ -150,13 +100,11 @@ export function ChatPage() {
       setUseCaseLockToken(null);
       setIsUseCaseLocked(false);
       setIsAdmin(false);
-      setAdminUsageStats(null);
-      setAdminStatsError(null);
       setErrorMessage(formatErrorMessage(error));
     } finally {
       setIsSessionLoading(false);
     }
-  }, [loadAdminUsageStats]);
+  }, []);
 
   useEffect(() => {
     void initializeSession();
@@ -250,9 +198,11 @@ export function ChatPage() {
 
     clearAllChatStorage();
     setIsAdmin(false);
-    setAdminUsageStats(null);
-    setAdminStatsError(null);
     await logoutFromAccessAndRedirect();
+  };
+
+  const handleControlCenter = () => {
+    window.location.hash = '/control-center';
   };
 
   return (
@@ -269,12 +219,9 @@ export function ChatPage() {
 
       <ChatTopBar
         username={username}
-        onLogout={handleLogout}
         isAdmin={isAdmin}
-        isAdminStatsLoading={isAdminStatsLoading}
-        adminStatsError={adminStatsError}
-        adminUsageStats={adminUsageStats}
-        onRefreshAdminStats={() => void loadAdminUsageStats()}
+        onControlCenter={handleControlCenter}
+        onLogout={handleLogout}
       />
 
       <main className="relative z-10 pt-20 px-4 pb-8">

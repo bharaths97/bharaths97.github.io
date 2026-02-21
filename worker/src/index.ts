@@ -37,6 +37,7 @@ const ensureAllowedOrigin = (origin: string | null, env: Env): void => {
 const toSessionResponse = (
   sessionId: string,
   username: string,
+  controlCenterEnabled: boolean,
   exp: number,
   limits: ReturnType<typeof getLimits>,
   selectedUseCaseId: string | null,
@@ -46,6 +47,9 @@ const toSessionResponse = (
   session_id: sessionId,
   user: {
     username
+  },
+  capabilities: {
+    control_center: controlCenterEnabled
   },
   selected_use_case_id: selectedUseCaseId,
   use_case_locked: useCaseLocked,
@@ -173,6 +177,7 @@ export default {
           toSessionResponse(
             sessionId,
             auth.identity.username,
+            auth.identity.role === 'admin',
             auth.claims.exp,
             limits,
             selectedUseCaseId,
