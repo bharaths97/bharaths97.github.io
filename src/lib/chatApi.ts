@@ -5,8 +5,7 @@ export interface ChatSessionResponse {
   ok: boolean;
   session_id: string;
   user: {
-    email: string;
-    display_name: string;
+    username: string;
   };
   selected_use_case_id?: string | null;
   use_case_locked?: boolean;
@@ -51,6 +50,26 @@ export interface ChatRespondResponse {
     use_case_locked?: boolean;
     use_case_lock_token?: string;
   };
+}
+
+export interface ChatAdminUsageResponse {
+  ok: boolean;
+  window_days: number;
+  generated_at: string;
+  totals: {
+    requests: number;
+    input_tokens: number;
+    output_tokens: number;
+    active_users: number;
+  };
+  users: Array<{
+    user_id: string;
+    username: string;
+    requests: number;
+    input_tokens: number;
+    output_tokens: number;
+    last_seen: string | null;
+  }>;
 }
 
 interface ApiErrorPayload {
@@ -130,4 +149,23 @@ export const postChatReset = async (sessionId: string): Promise<void> => {
     method: 'POST',
     body: JSON.stringify({ session_id: sessionId })
   });
+};
+
+export const getAdminUsageSummary = async (
+  options: {
+    days?: number;
+    limit?: number;
+  } = {}
+): Promise<ChatAdminUsageResponse> => {
+  const url = new URL(buildChatApiUrl('/api/chat/admin/usage'), window.location.origin);
+
+  if (typeof options.days === 'number' && Number.isFinite(options.days)) {
+    url.searchParams.set('days', String(options.days));
+  }
+
+  if (typeof options.limit === 'number' && Number.isFinite(options.limit)) {
+    url.searchParams.set('limit', String(options.limit));
+  }
+
+  return request<ChatAdminUsageResponse>(url.toString(), { method: 'GET' });
 };

@@ -198,9 +198,9 @@ Log safety notes:
 - Chat frontend: `src/pages/ChatPage.tsx`, `src/lib/chatApi.ts`, `src/lib/chatRuntime.ts`
 - Worker backend: `worker/src/index.ts` and `worker/src/*`
 - Prompt profiles (server-only): `worker/src/prompts/index.ts`, `worker/src/prompts/Gen.md`, `worker/src/prompts/Cat.md`, `worker/src/prompts/Upsc.md`
-- Worker internals guide: `WORKER.md`
-- Authenticated architecture doc: `docs/ARCHITECTURE_AUTHENTICATED_V1.md`
-- Threat model (current state): `docs/THREAT_MODEL_AUTHENTICATED_V1.md`
-- Product roadmap (authenticated-first + guest deferred): `docs/ROADMAP.md`
-- Security test evidence summary: `docs/SECURITY_TESTING_SUMMARY_AUTH_V1.md`
-- Automated Worker test catalog: `docs/WORKER_AUTOMATED_TESTS_AUTH_V1.md`
+- Worker internals guide (local docs): `docs/reference/WORKER.md`
+- Authenticated architecture doc (local docs): `docs/architecture/ARCHITECTURE_AUTHENTICATED_V1.md`
+- Threat model (local docs): `docs/security/THREAT_MODEL_AUTHENTICATED_V1.md`
+- Product roadmap (local docs): `docs/roadmap/ROADMAP.md`
+- Security test evidence summary (local docs): `docs/security/SECURITY_TESTING_SUMMARY_AUTH_V1.md`
+- Automated Worker test catalog (local docs): `docs/testing/WORKER_AUTOMATED_TESTS_AUTH_V1.md`

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import coloredBootHtml from '../../../colored_boot.html?raw';
+import coloredBootHtml from '../../assets/chat/colored_boot.html?raw';
 import type { ChatMessage } from '../../types/chat';
 
 interface ChatTranscriptProps {

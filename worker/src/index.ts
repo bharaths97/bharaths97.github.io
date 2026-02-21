@@ -12,7 +12,7 @@ import {
   noContentResponse,
   redirectResponse
 } from './security';
-import type { ChatRespondResponse, ChatSessionResponse, Env } from './types';
+import type { ChatAdminUsageResponse, ChatRespondResponse, ChatSessionResponse, Env } from './types';
 import {
   buildUseCaseLockClearCookie,
   buildUseCaseLockSetCookie,
@@ -21,6 +21,7 @@ import {
   USE_CASE_LOCK_COOKIE,
   verifyUseCaseLockToken
 } from './useCaseLock';
+import { getUsageSummary, hasUsageDb, recordUsageEvent } from './usageStore';
 import { validateResetPayload, validateRespondPayload, ValidationError } from './validation';
 
 const badRoute = (origin: string | null, env: Env, requestId: string): Response => {
@@ -35,8 +36,7 @@ const ensureAllowedOrigin = (origin: string | null, env: Env): void => {
 
 const toSessionResponse = (
   sessionId: string,
-  email: string,
-  displayName: string,
+  username: string,
   exp: number,
   limits: ReturnType<typeof getLimits>,
   selectedUseCaseId: string | null,
@@ -45,8 +45,7 @@ const toSessionResponse = (
   ok: true,
   session_id: sessionId,
   user: {
-    email,
-    display_name: displayName
+    username
   },
   selected_use_case_id: selectedUseCaseId,
   use_case_locked: useCaseLocked,
@@ -73,6 +72,15 @@ const parseAllowedOrigins = (env: Env): string[] =>
 
 const countUserTurns = (messages: Array<{ role: 'user' | 'assistant' }>): number => {
   return messages.filter((message) => message.role === 'user').length;
+};
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+const readPositiveInt = (value: string | null, fallback: number, min: number, max: number): number => {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return clamp(parsed, min, max);
 };
 
 const getDefaultReturnTo = (env: Env): string => {
@@ -164,8 +172,7 @@ export default {
           env,
           toSessionResponse(
             sessionId,
-            auth.email,
-            auth.displayName,
+            auth.identity.username,
             auth.claims.exp,
             limits,
             selectedUseCaseId,
@@ -173,6 +180,48 @@ export default {
           ),
           200
         );
+      }
+
+      if (url.pathname === '/api/chat/admin/usage' && request.method === 'GET') {
+        const auth = await authenticateRequest(request, env);
+        if (auth.identity.role !== 'admin') {
+          throw new AuthError('Admin access required.', 403, 'FORBIDDEN');
+        }
+
+        if (!hasUsageDb(env)) {
+          logger.error('admin.usage.unavailable', {
+            user_id: auth.identity.user_id,
+            duration_ms: Date.now() - startedAt
+          });
+          return errorResponse(origin, env, 503, 'USAGE_STORAGE_UNAVAILABLE', 'Usage storage unavailable.', requestId);
+        }
+
+        const windowDays = readPositiveInt(url.searchParams.get('days'), 7, 1, 365);
+        const maxUsers = readPositiveInt(url.searchParams.get('limit'), 25, 1, 100);
+
+        let summary: ChatAdminUsageResponse;
+        try {
+          summary = await getUsageSummary(env, {
+            windowDays,
+            maxUsers
+          });
+        } catch (error) {
+          logger.error('admin.usage.query_failed', {
+            user_id: auth.identity.user_id,
+            reason: error instanceof Error ? error.message : 'unknown',
+            duration_ms: Date.now() - startedAt
+          });
+          return errorResponse(origin, env, 503, 'USAGE_STORAGE_UNAVAILABLE', 'Usage storage unavailable.', requestId);
+        }
+
+        logger.info('admin.usage.read.success', {
+          user_id: auth.identity.user_id,
+          window_days: summary.window_days,
+          users_returned: summary.users.length,
+          duration_ms: Date.now() - startedAt
+        });
+
+        return jsonResponse(origin, env, summary, 200);
       }
 
       if (url.pathname === '/api/chat/respond' && request.method === 'POST') {
@@ -266,12 +315,33 @@ export default {
         logger.info('chat.respond.success', {
           subject_prefix: subjectPrefix(auth.claims.sub),
           email_domain: emailDomain(auth.email),
+          user_id: auth.identity.user_id,
           use_case_id: resolvedUseCaseId,
           model: response.usage?.model,
           input_tokens: response.usage?.input_tokens,
           output_tokens: response.usage?.output_tokens,
           duration_ms: Date.now() - startedAt
         });
+
+        if (hasUsageDb(env)) {
+          try {
+            await recordUsageEvent(env, {
+              requestId,
+              userId: auth.identity.user_id,
+              username: auth.identity.username,
+              useCaseId: resolvedUseCaseId,
+              model: response.usage?.model || env.OPENAI_MODEL?.trim() || 'gpt-4o-mini',
+              inputTokens: response.usage?.input_tokens || 0,
+              outputTokens: response.usage?.output_tokens || 0,
+              eventTs: new Date().toISOString()
+            });
+          } catch (error) {
+            logger.warn('chat.respond.usage_write_failed', {
+              user_id: auth.identity.user_id,
+              reason: error instanceof Error ? error.message : 'unknown'
+            });
+          }
+        }
 
         return jsonResponse(origin, env, response, 200, responseSetCookie ? { 'Set-Cookie': responseSetCookie } : undefined);
       }
@@ -310,6 +380,7 @@ export default {
           code: error.code,
           status: error.status,
           reason: error.message,
+          ...(error.meta || {}),
           duration_ms: Date.now() - startedAt
         });
         return errorResponse(origin, env, error.status, error.code, error.message, requestId);

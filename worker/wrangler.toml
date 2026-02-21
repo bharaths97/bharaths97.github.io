@@ -2,6 +2,11 @@ name = "bharath-private-chat-api"
 main = "src/index.ts"
 compatibility_date = "2026-02-20"
 
+# Bundle markdown prompt files into the Worker as text modules.
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+
 # Bind this worker to your protected /api/* route in Cloudflare dashboard or here.
 # routes = [{ pattern = "your-domain.com/api/*", zone_name = "your-domain.com" }]
 
@@ -23,7 +28,7 @@ LOG_LEVEL = "info"
 # Use: `npx wrangler deploy --env dev`
 [env.dev.vars]
 ACCESS_TEAM_DOMAIN = "your-team.cloudflareaccess.com"
-ACCESS_API_AUD = "your-access-aud"
+ACCESS_API_AUD = "your-dev-access-aud"
 ALLOWED_ORIGINS = "https://bharaths97.github.io,http://localhost:5173"
 ALLOWED_EMAILS = "you@example.com"
 OPENAI_MODEL = "gpt-4o-mini"
@@ -35,9 +40,16 @@ MAX_OUTPUT_TOKENS = "400"
 OPENAI_TIMEOUT_MS = "15000"
 LOG_LEVEL = "debug"
 
+
+[[env.dev.d1_databases]]
+binding = "USAGE_DB"
+database_name = "your-chat-usage-dev-db"
+database_id = "replace-with-dev-d1-database-id"
+
 # Set these via `wrangler secret put ...`
 # OPENAI_API_KEY
 # SESSION_HMAC_SECRET
+# USER_DIRECTORY_JSON
 
 # Optional: per-user rate limiting on /api/chat/respond
 # Configure in Cloudflare and tune for low-volume personal usage.

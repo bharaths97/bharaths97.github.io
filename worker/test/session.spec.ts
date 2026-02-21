@@ -26,6 +26,71 @@ describe('worker session behavior', () => {
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(typeof body.session_id).toBe('string');
+    expect(body.user).toEqual({
+      username: 'allowed_user'
+    });
+    expect((body.user as Record<string, unknown>).email).toBeUndefined();
+  });
+
+  it('returns mapped username when USER_DIRECTORY_JSON is configured', async () => {
+    restoreFetch = await installJwksFetchMock();
+    const env = buildEnv({
+      USER_DIRECTORY_JSON: JSON.stringify([
+        {
+          email: 'allowed@example.com',
+          user_id: 'usr_allowed_001',
+          username: 'bharath',
+          alias: 'mirrorball',
+          role: 'admin'
+        }
+      ])
+    });
+    const token = await createAccessToken();
+    const request = makeRequest('/api/chat/session', {
+      method: 'GET',
+      headers: {
+        'Cf-Access-Jwt-Assertion': token
+      }
+    });
+
+    const response = await invokeWorker(request, env);
+    const body = await requestJson(response);
+
+    expect(response.status).toBe(200);
+    expect(body.user).toEqual({
+      username: 'bharath'
+    });
+    expect((body.user as Record<string, unknown>).email).toBeUndefined();
+  });
+
+  it('rejects allowlisted email when USER_DIRECTORY_JSON omits mapping', async () => {
+    restoreFetch = await installJwksFetchMock();
+    const env = buildEnv({
+      USER_DIRECTORY_JSON: JSON.stringify([
+        {
+          email: 'someone-else@example.com',
+          user_id: 'usr_someone_else',
+          username: 'someone_else',
+          alias: 'someone_else',
+          role: 'member'
+        }
+      ])
+    });
+    const token = await createAccessToken();
+    const request = makeRequest('/api/chat/session', {
+      method: 'GET',
+      headers: {
+        'Cf-Access-Jwt-Assertion': token
+      }
+    });
+
+    const response = await invokeWorker(request, env);
+    const body = await requestJson(response);
+    const error = body.error as Record<string, unknown>;
+
+    expect(response.status).toBe(403);
+    expect(error.code).toBe('FORBIDDEN');
+    expect(error.message).toBe('User identity mapping is not configured for this account.');
   });
 
   it('rejects /api/chat/respond when request session_id mismatches authenticated session', async () => {

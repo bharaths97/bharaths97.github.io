@@ -1,14 +1,17 @@
 import type { AccessClaims, AuthContext, Env } from './types';
+import { resolveUserIdentity } from './userDirectory';
 
 export class AuthError extends Error {
   status: number;
   code: string;
+  meta?: Record<string, unknown>;
 
-  constructor(message: string, status = 401, code = 'UNAUTHORIZED') {
+  constructor(message: string, status = 401, code = 'UNAUTHORIZED', meta?: Record<string, unknown>) {
     super(message);
     this.name = 'AuthError';
     this.status = status;
     this.code = code;
+    this.meta = meta;
   }
 }
 
@@ -21,10 +24,12 @@ interface JwksResponse {
   keys: JsonWebKey[];
 }
 
-let jwksCache: {
+type JwksCacheEntry = {
   keys: JsonWebKey[];
   expiresAtMs: number;
-} | null = null;
+};
+
+const jwksCache = new Map<string, JwksCacheEntry>();
 
 const decodeBase64UrlToBytes = (input: string): Uint8Array => {
   const padding = (4 - (input.length % 4)) % 4;
@@ -50,14 +55,16 @@ const sanitizeTeamDomain = (teamDomain: string): string => {
 
 const getExpectedIssuer = (env: Env): string => `https://${sanitizeTeamDomain(env.ACCESS_TEAM_DOMAIN)}`;
 
-const fetchJwks = async (env: Env): Promise<JsonWebKey[]> => {
+const fetchJwks = async (env: Env, forceRefresh = false): Promise<JsonWebKey[]> => {
   const now = Date.now();
+  const teamDomain = sanitizeTeamDomain(env.ACCESS_TEAM_DOMAIN);
+  const cacheKey = teamDomain.toLowerCase();
+  const cached = jwksCache.get(cacheKey);
 
-  if (jwksCache && jwksCache.expiresAtMs > now) {
-    return jwksCache.keys;
+  if (!forceRefresh && cached && cached.expiresAtMs > now) {
+    return cached.keys;
   }
 
-  const teamDomain = sanitizeTeamDomain(env.ACCESS_TEAM_DOMAIN);
   const response = await fetch(`https://${teamDomain}/cdn-cgi/access/certs`);
   if (!response.ok) {
     throw new AuthError('Unable to fetch Access certificate set.', 503, 'AUTH_CERT_FETCH_FAILED');
@@ -72,10 +79,10 @@ const fetchJwks = async (env: Env): Promise<JsonWebKey[]> => {
   const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
   const maxAge = maxAgeMatch ? Number.parseInt(maxAgeMatch[1], 10) : 300;
 
-  jwksCache = {
+  jwksCache.set(cacheKey, {
     keys: payload.keys,
     expiresAtMs: now + Math.max(30, maxAge) * 1000
-  };
+  });
 
   return payload.keys;
 };
@@ -114,9 +121,14 @@ const verifyJwtSignature = async (
     signatureBytes.byteOffset,
     signatureBytes.byteOffset + signatureBytes.byteLength
   ) as ArrayBuffer;
-  const keys = await fetchJwks(env);
+  let keys = await fetchJwks(env);
 
-  const candidateKeys = header.kid ? keys.filter((key) => (key as { kid?: string }).kid === header.kid) : keys;
+  let candidateKeys = header.kid ? keys.filter((key) => (key as { kid?: string }).kid === header.kid) : keys;
+  if (header.kid && candidateKeys.length === 0) {
+    keys = await fetchJwks(env, true);
+    candidateKeys = keys.filter((key) => (key as { kid?: string }).kid === header.kid);
+  }
+
   if (candidateKeys.length === 0) {
     throw new AuthError('No matching verification key found.', 401, 'UNAUTHORIZED');
   }
@@ -163,12 +175,7 @@ const validateClaims = (claims: AccessClaims, env: Env): void => {
   }
 };
 
-const getDisplayName = (claims: AccessClaims, email: string): string => {
-  const name = claims.name?.trim();
-  if (name) return name;
-  const localPart = email.split('@')[0]?.trim();
-  return localPart || 'authorized_user';
-};
+const getEmailDomain = (email: string): string => email.split('@')[1] || 'unknown';
 
 export const authenticateRequest = async (request: Request, env: Env): Promise<AuthContext> => {
   const token = request.headers.get('Cf-Access-Jwt-Assertion');
@@ -195,18 +202,35 @@ export const authenticateRequest = async (request: Request, env: Env): Promise<A
 
   const email = claims.email?.trim().toLowerCase();
   if (!email) {
-    throw new AuthError('Email claim missing in Access token.', 403, 'FORBIDDEN');
+    throw new AuthError('Email claim missing in Access token.', 403, 'FORBIDDEN', {
+      subject_prefix: claims.sub?.slice(0, 8) || 'unknown'
+    });
   }
 
   const allowedEmails = parseAllowedEmails(env);
   if (!allowedEmails.has(email)) {
-    throw new AuthError('User is not allowed for this API.', 403, 'FORBIDDEN');
+    throw new AuthError('User is not allowed for this API.', 403, 'FORBIDDEN', {
+      attempted_email: email,
+      attempted_email_domain: getEmailDomain(email),
+      subject_prefix: claims.sub?.slice(0, 8) || 'unknown'
+    });
+  }
+
+  let identity: Awaited<ReturnType<typeof resolveUserIdentity>>;
+  try {
+    identity = await resolveUserIdentity(email, claims, env);
+  } catch {
+    throw new AuthError('User identity mapping is not configured for this account.', 403, 'FORBIDDEN', {
+      attempted_email: email,
+      attempted_email_domain: getEmailDomain(email),
+      subject_prefix: claims.sub?.slice(0, 8) || 'unknown'
+    });
   }
 
   return {
     claims,
     email,
-    displayName: getDisplayName(claims, email)
+    identity
   };
 };
 

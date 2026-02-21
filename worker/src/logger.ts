@@ -10,6 +10,13 @@ const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
 };
 
 const SENSITIVE_KEY_PATTERN = /(prompt|content|messages|authorization|token|secret|api[_-]?key|cf-access-jwt-assertion)/i;
+const TOKEN_COUNT_KEYS = new Set([
+  'prompt_tokens',
+  'completion_tokens',
+  'input_tokens',
+  'output_tokens',
+  'total_tokens'
+]);
 
 const MAX_STRING_LENGTH = 300;
 const MAX_DEPTH = 4;
@@ -34,7 +41,10 @@ const sanitize = (value: unknown, depth = 0): unknown => {
     const result: Record<string, unknown> = {};
 
     for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
-      if (SENSITIVE_KEY_PATTERN.test(key)) {
+      const normalizedKey = key.trim().toLowerCase();
+      const isTokenCount = TOKEN_COUNT_KEYS.has(normalizedKey) && typeof raw === 'number';
+
+      if (!isTokenCount && SENSITIVE_KEY_PATTERN.test(key)) {
         result[key] = '[redacted]';
       } else {
         result[key] = sanitize(raw, depth + 1);

@@ -5,6 +5,7 @@ Endpoints:
 - `GET /api/chat/session`
 - `POST /api/chat/respond`
 - `POST /api/chat/reset`
+- `GET /api/chat/admin/usage` (admin role only)
 
 Prompt profiles (server-only):
 - `worker/src/prompts/Gen.md`
@@ -36,6 +37,7 @@ Required vars:
 - `ALLOWED_EMAILS`
 
 Optional vars:
+- `USER_DIRECTORY_JSON` (recommended for stable `user_id`/`username`/`role` mapping)
 - `OPENAI_MODEL`
 - `MAX_USER_CHARS`
 - `MAX_CONTEXT_MESSAGES`
@@ -44,6 +46,12 @@ Optional vars:
 - `MAX_OUTPUT_TOKENS`
 - `OPENAI_TIMEOUT_MS`
 - `LOG_LEVEL` (`debug`, `info`, `warn`, `error`)
+
+Optional D1 binding (usage tracking + admin stats):
+- `USAGE_DB`
+  - Table `usage_events` is created lazily by the worker.
+  - `/api/chat/respond` writes per-response usage metadata.
+  - `/api/chat/admin/usage` returns a rolling summary.
 
 Optional rate limit bindings:
 - `RESPOND_BURST_LIMITER`
