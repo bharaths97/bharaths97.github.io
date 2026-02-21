@@ -9,12 +9,21 @@ const OPENAI_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
 
 let keyPairPromise: Promise<CryptoKeyPair> | null = null;
 
+const base64UrlEncode = (bytes: Uint8Array): string => {
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+};
+
 const base64UrlJson = (value: unknown): string => {
-  return Buffer.from(JSON.stringify(value)).toString('base64url');
+  return base64UrlEncode(new TextEncoder().encode(JSON.stringify(value)));
 };
 
 const base64UrlBytes = (value: ArrayBuffer): string => {
-  return Buffer.from(value).toString('base64url');
+  return base64UrlEncode(new Uint8Array(value));
 };
 
 const getKeyPair = async (): Promise<CryptoKeyPair> => {
@@ -86,10 +95,10 @@ export const createAccessToken = async (overrides: Partial<AccessClaims> = {}): 
 export const installJwksFetchMock = async (): Promise<() => void> => {
   const keyPair = await getKeyPair();
   const exportedPublicJwk = (await crypto.subtle.exportKey('jwk', keyPair.publicKey)) as JsonWebKey;
-  const publicJwk: JsonWebKey = {
+  const publicJwk = {
     ...exportedPublicJwk,
     kid: 'test-kid'
-  };
+  } as JsonWebKey;
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL): Promise<Response> => {
@@ -118,10 +127,10 @@ export const installJwksAndOpenAIFetchMock = async (
 ): Promise<() => void> => {
   const keyPair = await getKeyPair();
   const exportedPublicJwk = (await crypto.subtle.exportKey('jwk', keyPair.publicKey)) as JsonWebKey;
-  const publicJwk: JsonWebKey = {
+  const publicJwk = {
     ...exportedPublicJwk,
     kid: 'test-kid'
-  };
+  } as JsonWebKey;
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL): Promise<Response> => {
