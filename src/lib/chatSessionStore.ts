@@ -1,9 +1,11 @@
-import type { ChatMessage } from '../types/chat';
+import type { ChatMessage, ChatUseCaseState } from '../types/chat';
 
 const ACTIVE_SESSION_KEY = 'chat:v1:activeSessionId';
 const SESSION_MESSAGES_PREFIX = 'chat:v1:messages:';
+const SESSION_USE_CASE_PREFIX = 'chat:v1:useCase:';
 
 const getSessionMessagesKey = (sessionId: string): string => `${SESSION_MESSAGES_PREFIX}${sessionId}`;
+const getSessionUseCaseKey = (sessionId: string): string => `${SESSION_USE_CASE_PREFIX}${sessionId}`;
 
 const isChatMessage = (value: unknown): value is ChatMessage => {
   if (!value || typeof value !== 'object') return false;
@@ -48,12 +50,51 @@ export const clearSessionMessages = (sessionId: string): void => {
   sessionStorage.removeItem(getSessionMessagesKey(sessionId));
 };
 
+export const loadSessionUseCaseState = (sessionId: string): ChatUseCaseState => {
+  const raw = sessionStorage.getItem(getSessionUseCaseKey(sessionId));
+  if (!raw) {
+    return {
+      useCaseId: null,
+      useCaseLockToken: null,
+      isLocked: false
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<ChatUseCaseState>;
+    return {
+      useCaseId: typeof parsed.useCaseId === 'string' ? parsed.useCaseId : null,
+      useCaseLockToken: typeof parsed.useCaseLockToken === 'string' ? parsed.useCaseLockToken : null,
+      isLocked: parsed.isLocked === true
+    };
+  } catch {
+    return {
+      useCaseId: null,
+      useCaseLockToken: null,
+      isLocked: false
+    };
+  }
+};
+
+export const saveSessionUseCaseState = (sessionId: string, value: ChatUseCaseState): void => {
+  sessionStorage.setItem(getSessionUseCaseKey(sessionId), JSON.stringify(value));
+};
+
+export const clearSessionUseCaseState = (sessionId: string): void => {
+  sessionStorage.removeItem(getSessionUseCaseKey(sessionId));
+};
+
 export const clearAllChatStorage = (): void => {
   clearActiveSessionId();
 
   for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
     const key = sessionStorage.key(index);
     if (key?.startsWith(SESSION_MESSAGES_PREFIX)) {
+      sessionStorage.removeItem(key);
+      continue;
+    }
+
+    if (key?.startsWith(SESSION_USE_CASE_PREFIX)) {
       sessionStorage.removeItem(key);
     }
   }

@@ -67,19 +67,26 @@ const mergeHeaders = (origin: string | null, env: Env, extra?: HeadersInit): Hea
   return headers;
 };
 
-export const jsonResponse = (origin: string | null, env: Env, data: unknown, status = 200): Response => {
+export const jsonResponse = (
+  origin: string | null,
+  env: Env,
+  data: unknown,
+  status = 200,
+  extraHeaders?: HeadersInit
+): Response => {
   return new Response(JSON.stringify(data), {
     status,
     headers: mergeHeaders(origin, env, {
-      'Content-Type': 'application/json; charset=utf-8'
+      'Content-Type': 'application/json; charset=utf-8',
+      ...(extraHeaders || {})
     })
   });
 };
 
-export const noContentResponse = (origin: string | null, env: Env): Response => {
+export const noContentResponse = (origin: string | null, env: Env, extraHeaders?: HeadersInit): Response => {
   return new Response(null, {
     status: 204,
-    headers: mergeHeaders(origin, env)
+    headers: mergeHeaders(origin, env, extraHeaders)
   });
 };
 

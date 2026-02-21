@@ -14,8 +14,45 @@ const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
 };
 
+const USE_CASE_ID_PATTERN = /^[a-z0-9_-]{1,64}$/;
+const USE_CASE_LOCK_TOKEN_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
 const isChatRole = (value: unknown): value is ChatMessage['role'] => {
   return value === 'user' || value === 'assistant';
+};
+
+const validateUseCaseId = (useCaseId: unknown): string | undefined => {
+  if (typeof useCaseId === 'undefined') {
+    return undefined;
+  }
+
+  if (typeof useCaseId !== 'string') {
+    throw new ValidationError('Invalid use_case_id.');
+  }
+
+  const trimmed = useCaseId.trim();
+  if (!trimmed || !USE_CASE_ID_PATTERN.test(trimmed)) {
+    throw new ValidationError('Invalid use_case_id format.');
+  }
+
+  return trimmed;
+};
+
+const validateUseCaseLockToken = (token: unknown): string | undefined => {
+  if (typeof token === 'undefined') {
+    return undefined;
+  }
+
+  if (typeof token !== 'string') {
+    throw new ValidationError('Invalid use_case_lock_token.');
+  }
+
+  const trimmed = token.trim();
+  if (!trimmed || !USE_CASE_LOCK_TOKEN_PATTERN.test(trimmed)) {
+    throw new ValidationError('Invalid use_case_lock_token format.');
+  }
+
+  return trimmed;
 };
 
 export const validateSessionId = (sessionId: unknown): string => {
@@ -56,6 +93,8 @@ export const validateRespondPayload = (
 
   const sessionId = validateSessionId(body.session_id);
   const rawMessages = body.messages;
+  const useCaseId = validateUseCaseId(body.use_case_id);
+  const useCaseLockToken = validateUseCaseLockToken(body.use_case_lock_token);
 
   if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
     throw new ValidationError('Messages must be a non-empty array.');
@@ -115,6 +154,8 @@ export const validateRespondPayload = (
 
   return {
     session_id: sessionId,
-    messages
+    messages,
+    use_case_id: useCaseId,
+    use_case_lock_token: useCaseLockToken
   };
 };

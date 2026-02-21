@@ -6,3 +6,14 @@ export interface ChatMessage {
   content: string;
   createdAt: string;
 }
+
+export interface ChatUseCaseOption {
+  id: string;
+  display_name: string;
+}
+
+export interface ChatUseCaseState {
+  useCaseId: string | null;
+  useCaseLockToken: string | null;
+  isLocked: boolean;
+}

@@ -6,6 +6,25 @@ Endpoints:
 - `POST /api/chat/respond`
 - `POST /api/chat/reset`
 
+Prompt profiles (server-only):
+- `worker/src/prompts/Gen.md`
+- `worker/src/prompts/Cat.md`
+- `worker/src/prompts/Upsc.md`
+- `worker/src/prompts/index.ts`
+  - Edit profile IDs and `displayName` values in this file.
+  - Frontend selector labels come from `displayName`.
+  - Prompt text is loaded from markdown files and never sent to frontend.
+  - Keep markdown files non-sensitive for public repos.
+  - Set real prompt content via Worker runtime secrets/vars:
+    - `USE_CASE_PROMPT_GEN`
+    - `USE_CASE_PROMPT_CAT`
+    - `USE_CASE_PROMPT_UPSC`
+
+Use-case lock:
+- `worker/src/useCaseLock.ts`
+  - Signed `use_case_lock_token` binds a selected profile to a session.
+  - `/api/chat/respond` enforces this lock token on subsequent turns.
+
 Required secrets:
 - `OPENAI_API_KEY`
 - `SESSION_HMAC_SECRET`

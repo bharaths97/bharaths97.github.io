@@ -5,6 +5,7 @@ const TEST_TEAM_DOMAIN = 'test-team.cloudflareaccess.com';
 const TEST_AUD = 'test-access-aud';
 const TEST_ORIGIN = 'http://localhost:5173';
 const TEST_EMAIL = 'allowed@example.com';
+const OPENAI_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
 
 let keyPairPromise: Promise<CryptoKeyPair> | null = null;
 
@@ -102,6 +103,56 @@ export const installJwksFetchMock = async (): Promise<() => void> => {
           'Cache-Control': 'max-age=300'
         }
       });
+    }
+
+    throw new Error(`Unexpected fetch URL in test: ${url}`);
+  }) as typeof fetch;
+
+  return () => {
+    globalThis.fetch = originalFetch;
+  };
+};
+
+export const installJwksAndOpenAIFetchMock = async (
+  assistantContent = 'test assistant response'
+): Promise<() => void> => {
+  const keyPair = await getKeyPair();
+  const exportedPublicJwk = (await crypto.subtle.exportKey('jwk', keyPair.publicKey)) as JsonWebKey;
+  const publicJwk: JsonWebKey = {
+    ...exportedPublicJwk,
+    kid: 'test-kid'
+  };
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+    if (url === `https://${TEST_TEAM_DOMAIN}/cdn-cgi/access/certs`) {
+      return new Response(JSON.stringify({ keys: [publicJwk] }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'max-age=300'
+        }
+      });
+    }
+
+    if (url === OPENAI_COMPLETIONS_URL) {
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: assistantContent } }],
+          usage: {
+            prompt_tokens: 42,
+            completion_tokens: 11
+          }
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
     }
 
     throw new Error(`Unexpected fetch URL in test: ${url}`);

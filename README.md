@@ -75,6 +75,7 @@ Notes:
 - Logout behavior:
   - If `VITE_CHAT_LOGOUT_URL` is Access logout URL, app calls logout endpoint first, then redirects to `VITE_CHAT_LOGOUT_RETURN_TO` (or homepage default).
   - If not set, app defaults to Access logout on API base URL when available; otherwise `/`.
+  - Security note: redirect destination is deployment-configured (`VITE_*`), not user-provided input; protect CI/CD config to avoid misdirected logout redirects.
 
 ---
 
@@ -92,6 +93,12 @@ Set your values for:
 Required:
 - `OPENAI_API_KEY`
 - `SESSION_HMAC_SECRET`
+
+Optional (recommended for public repos):
+- `USE_CASE_PROMPT_GEN`
+- `USE_CASE_PROMPT_CAT`
+- `USE_CASE_PROMPT_UPSC`
+These let you keep real base prompts out of source control.
 
 You can set these via dashboard or Wrangler secret commands.
 
@@ -146,6 +153,13 @@ Additional security checks:
 3. Session mismatch payload is rejected by Worker.
 4. Rate limits trigger expected `429` responses.
 
+Prompt-profile checks:
+1. `GET /api/chat/session` returns non-empty `prompt_profiles`.
+2. Selector is visible before first chat message.
+3. First message locks selected profile (`use_case_locked=true`).
+4. Attempting to change profile in same session is rejected (`400 BAD_REQUEST`).
+5. Logout/reset clears the lock for a new session.
+
 ## Recommended Next Steps (Now)
 
 1. Capture final non-allowlisted-user denial evidence in logs (`403 FORBIDDEN`) and store with test artifacts.
@@ -183,6 +197,7 @@ Log safety notes:
 - Frontend entry: `src/main.tsx`, `src/App.tsx`
 - Chat frontend: `src/pages/ChatPage.tsx`, `src/lib/chatApi.ts`, `src/lib/chatRuntime.ts`
 - Worker backend: `worker/src/index.ts` and `worker/src/*`
+- Prompt profiles (server-only): `worker/src/prompts/index.ts`, `worker/src/prompts/Gen.md`, `worker/src/prompts/Cat.md`, `worker/src/prompts/Upsc.md`
 - Worker internals guide: `WORKER.md`
 - Authenticated architecture doc: `docs/ARCHITECTURE_AUTHENTICATED_V1.md`
 - Threat model (current state): `docs/THREAT_MODEL_AUTHENTICATED_V1.md`

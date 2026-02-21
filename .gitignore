@@ -18,3 +18,4 @@ LOGS/
 worker/wrangler-test.toml
 .vscode/
 worker/.env.example
+files/

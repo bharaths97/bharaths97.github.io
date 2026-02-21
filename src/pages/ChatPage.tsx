@@ -7,12 +7,15 @@ import { getChatAccessLoginUrl, isExternalChatApiConfigured, logoutFromAccessAnd
 import {
   clearAllChatStorage,
   clearSessionMessages,
+  clearSessionUseCaseState,
   getActiveSessionId,
   loadSessionMessages,
+  loadSessionUseCaseState,
   saveSessionMessages,
+  saveSessionUseCaseState,
   setActiveSessionId
 } from '../lib/chatSessionStore';
-import type { ChatMessage } from '../types/chat';
+import type { ChatMessage, ChatUseCaseOption } from '../types/chat';
 
 const newMessage = (role: ChatMessage['role'], content: string): ChatMessage => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -45,6 +48,10 @@ export function ChatPage() {
   const [isThinking, setIsThinking] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [useCases, setUseCases] = useState<ChatUseCaseOption[]>([]);
+  const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | null>(null);
+  const [useCaseLockToken, setUseCaseLockToken] = useState<string | null>(null);
+  const [isUseCaseLocked, setIsUseCaseLocked] = useState(false);
 
   const initializeSession = useCallback(async () => {
     setIsSessionLoading(true);
@@ -57,11 +64,23 @@ export function ChatPage() {
 
       if (previousSessionId && previousSessionId !== nextSessionId) {
         clearSessionMessages(previousSessionId);
+        clearSessionUseCaseState(previousSessionId);
       }
 
       setActiveSessionId(nextSessionId);
       setSessionId(nextSessionId);
       setMessages(loadSessionMessages(nextSessionId));
+
+      const availableUseCases = Array.isArray(session.prompt_profiles) ? session.prompt_profiles : [];
+      const storedUseCaseState = loadSessionUseCaseState(nextSessionId);
+      const fallbackUseCaseId = availableUseCases[0]?.id || null;
+      const serverSelectedUseCaseId = typeof session.selected_use_case_id === 'string' ? session.selected_use_case_id : null;
+      const effectiveUseCaseId = serverSelectedUseCaseId || storedUseCaseState.useCaseId || fallbackUseCaseId;
+
+      setUseCases(availableUseCases);
+      setSelectedUseCaseId(effectiveUseCaseId);
+      setUseCaseLockToken(storedUseCaseState.useCaseLockToken);
+      setIsUseCaseLocked(session.use_case_locked === true || storedUseCaseState.isLocked);
 
       const nextUsername = session.user.display_name?.trim() || session.user.email || 'authorized_user';
       setUsername(nextUsername);
@@ -74,6 +93,10 @@ export function ChatPage() {
 
       setSessionId(null);
       setMessages([]);
+      setUseCases([]);
+      setSelectedUseCaseId(null);
+      setUseCaseLockToken(null);
+      setIsUseCaseLocked(false);
       setErrorMessage(formatErrorMessage(error));
     } finally {
       setIsSessionLoading(false);
@@ -89,9 +112,23 @@ export function ChatPage() {
     saveSessionMessages(sessionId, messages);
   }, [sessionId, messages]);
 
+  useEffect(() => {
+    if (!sessionId) return;
+    saveSessionUseCaseState(sessionId, {
+      useCaseId: selectedUseCaseId,
+      useCaseLockToken,
+      isLocked: isUseCaseLocked
+    });
+  }, [sessionId, selectedUseCaseId, useCaseLockToken, isUseCaseLocked]);
+
   const canSend = useMemo(
-    () => input.trim().length > 0 && !isThinking && !isSessionLoading && Boolean(sessionId),
-    [input, isThinking, isSessionLoading, sessionId]
+    () =>
+      input.trim().length > 0 &&
+      !isThinking &&
+      !isSessionLoading &&
+      Boolean(sessionId) &&
+      (useCases.length === 0 || Boolean(selectedUseCaseId)),
+    [input, isThinking, isSessionLoading, sessionId, selectedUseCaseId, useCases.length]
   );
 
   const handleSend = async () => {
@@ -109,6 +146,8 @@ export function ChatPage() {
     try {
       const response = await postChatRespond({
         session_id: sessionId,
+        use_case_id: selectedUseCaseId || undefined,
+        use_case_lock_token: useCaseLockToken || undefined,
         messages: nextMessages.map((message) => ({
           role: message.role,
           content: message.content,
@@ -122,6 +161,13 @@ export function ChatPage() {
         return;
       }
 
+      const nextUseCaseId = response.session?.use_case_id || selectedUseCaseId;
+      const nextUseCaseLockToken = response.session?.use_case_lock_token || useCaseLockToken;
+      const nextUseCaseLocked = response.session?.use_case_locked === true || Boolean(nextUseCaseLockToken);
+
+      setSelectedUseCaseId(nextUseCaseId || null);
+      setUseCaseLockToken(nextUseCaseLockToken || null);
+      setIsUseCaseLocked(nextUseCaseLocked);
       setMessages((prev) => [...prev, newMessage('assistant', assistantText)]);
     } catch (error) {
       if (error instanceof ChatApiError && (error.status === 401 || error.status === 403)) {
@@ -173,8 +219,22 @@ export function ChatPage() {
             </div>
           )}
 
-          <ChatTranscript messages={messages} isThinking={isThinking} errorMessage={errorMessage} />
-          <ChatComposer value={input} onChange={setInput} onSend={() => void handleSend()} disabled={!canSend} />
+          <ChatTranscript messages={messages} isThinking={isThinking} username={username} errorMessage={errorMessage} />
+          <ChatComposer
+            value={input}
+            onChange={setInput}
+            onSend={() => void handleSend()}
+            useCases={useCases}
+            selectedUseCaseId={selectedUseCaseId}
+            onUseCaseChange={(nextUseCaseId) => {
+              setSelectedUseCaseId(nextUseCaseId);
+              if (!isUseCaseLocked) {
+                setUseCaseLockToken(null);
+              }
+            }}
+            useCaseLocked={isUseCaseLocked}
+            disabled={!canSend}
+          />
         </div>
       </main>
 

@@ -1,4 +1,4 @@
-import type { ChatRole } from '../types/chat';
+import type { ChatRole, ChatUseCaseOption } from '../types/chat';
 import { buildChatApiUrl } from './chatRuntime';
 
 export interface ChatSessionResponse {
@@ -8,6 +8,9 @@ export interface ChatSessionResponse {
     email: string;
     display_name: string;
   };
+  selected_use_case_id?: string | null;
+  use_case_locked?: boolean;
+  prompt_profiles?: ChatUseCaseOption[];
   expires_at: string;
   limits?: {
     max_turns?: number;
@@ -25,6 +28,8 @@ export interface ChatRespondRequestMessage {
 export interface ChatRespondRequest {
   session_id: string;
   messages: ChatRespondRequestMessage[];
+  use_case_id?: string;
+  use_case_lock_token?: string;
 }
 
 export interface ChatRespondResponse {
@@ -42,6 +47,9 @@ export interface ChatRespondResponse {
   session?: {
     session_id: string;
     expires_at: string;
+    use_case_id?: string;
+    use_case_locked?: boolean;
+    use_case_lock_token?: string;
   };
 }
 

@@ -1,8 +1,5 @@
 import type { ChatMessage, Env } from './types';
 
-const SYSTEM_PROMPT =
-  'You are a concise assistant for a private portfolio chat. Provide direct, accurate, safe answers. Keep responses short unless asked for detail.';
-
 interface OpenAIChatCompletionResponse {
   choices?: Array<{
     message?: {
@@ -31,6 +28,7 @@ export const generateAssistantReply = async (
   env: Env,
   messages: ChatMessage[],
   options: {
+    systemPrompt: string;
     maxContextMessages: number;
     maxOutputTokens: number;
     timeoutMs: number;
@@ -49,7 +47,7 @@ export const generateAssistantReply = async (
   const payload = {
     model,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: options.systemPrompt },
       ...context.map((message) => ({ role: message.role, content: message.content }))
     ],
     temperature: 0.3,

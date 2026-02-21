@@ -9,6 +9,9 @@ export interface Env {
   ACCESS_API_AUD: string;
   ALLOWED_ORIGINS: string;
   ALLOWED_EMAILS: string;
+  USE_CASE_PROMPT_GEN?: string;
+  USE_CASE_PROMPT_CAT?: string;
+  USE_CASE_PROMPT_UPSC?: string;
   OPENAI_MODEL?: string;
   MAX_USER_CHARS?: string;
   MAX_CONTEXT_MESSAGES?: string;
@@ -54,6 +57,12 @@ export interface ChatSessionResponse {
     email: string;
     display_name: string;
   };
+  selected_use_case_id: string | null;
+  use_case_locked: boolean;
+  prompt_profiles: Array<{
+    id: string;
+    display_name: string;
+  }>;
   expires_at: string;
   limits: {
     max_turns: number;
@@ -65,6 +74,8 @@ export interface ChatSessionResponse {
 export interface ChatRespondRequest {
   session_id: string;
   messages: ChatMessage[];
+  use_case_id?: string;
+  use_case_lock_token?: string;
 }
 
 export interface ChatRespondResponse {
@@ -82,5 +93,8 @@ export interface ChatRespondResponse {
   session: {
     session_id: string;
     expires_at: string;
+    use_case_id: string;
+    use_case_locked: boolean;
+    use_case_lock_token: string;
   };
 }
