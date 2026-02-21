@@ -7,6 +7,9 @@ export interface ChatSessionResponse {
   user: {
     username: string;
   };
+  capabilities?: {
+    control_center?: boolean;
+  };
   selected_use_case_id?: string | null;
   use_case_locked?: boolean;
   prompt_profiles?: ChatUseCaseOption[];
