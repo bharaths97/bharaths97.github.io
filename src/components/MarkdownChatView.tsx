@@ -9,7 +9,8 @@ const safeImageSource = (url: string): boolean => /^(https?:\/\/|\/)/i.test(url)
 
 const renderInline = (text: string, keyPrefix: string): ReactNode[] => {
   const nodes: ReactNode[] = [];
-  const inlinePattern = /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  const inlinePattern =
+    /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|`([^`]+)`|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*\n]+)\*/g;
   let startIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -22,6 +23,10 @@ const renderInline = (text: string, keyPrefix: string): ReactNode[] => {
     const imageUrl = match[2];
     const linkLabel = match[3];
     const linkUrl = match[4];
+    const inlineCode = match[5];
+    const boldTextAsterisk = match[6];
+    const boldTextUnderscore = match[7];
+    const italicText = match[8];
 
     if (imageUrl) {
       if (safeImageSource(imageUrl)) {
@@ -40,7 +45,7 @@ const renderInline = (text: string, keyPrefix: string): ReactNode[] => {
         nodes.push(match[0]);
       }
     } else {
-      if (safeLink(linkUrl)) {
+      if (linkUrl && safeLink(linkUrl)) {
         nodes.push(
           <a
             key={`${keyPrefix}-${match.index}`}
@@ -51,6 +56,28 @@ const renderInline = (text: string, keyPrefix: string): ReactNode[] => {
           >
             {linkLabel}
           </a>
+        );
+      } else if (inlineCode) {
+        nodes.push(
+          <code
+            key={`${keyPrefix}-${match.index}`}
+            className="rounded border border-cyan-300/30 bg-cyan-300/10 px-1 py-0.5 text-cyan-200"
+          >
+            {inlineCode}
+          </code>
+        );
+      } else if (boldTextAsterisk || boldTextUnderscore) {
+        const boldText = boldTextAsterisk || boldTextUnderscore;
+        nodes.push(
+          <strong key={`${keyPrefix}-${match.index}`} className="font-semibold text-white">
+            {boldText}
+          </strong>
+        );
+      } else if (italicText) {
+        nodes.push(
+          <em key={`${keyPrefix}-${match.index}`} className="italic text-white/90">
+            {italicText}
+          </em>
         );
       } else {
         nodes.push(match[0]);

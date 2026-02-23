@@ -5,26 +5,27 @@ tags: Agentic AI, SAST Tooling, Code Review
 order: 1
 ---
 
-I didn't build this because I think AI is magic. I built it because I wanted to understand exactly where AI reasoning adds something real to security analysis, and where it doesn't. The answer turned out to be more interesting than I expected.
-
+I didn’t build this because I think AI is magic. I built it because I wanted to stress-test a very specific question:
+**Can an LLM actually reason about security — or is it just doing expensive pattern matching?**
+The answer ended up being more nuanced (and more interesting) than I expected.
 ---
 
 ## The Question
+Most security tooling today is pattern-driven. Semgrep, CodeQL, Snyk — they work backwards from known dangerous functions to potential taint sources. They’re fast. They’re deterministic. They’re very good at catching what they were designed to catch. But they don’t understand intent.
 
-Security tooling is full of pattern matchers. Semgrep, CodeQL, Snyk — they trace known dangerous functions back to taint sources. They're fast, consistent, and good at finding what they were trained to find.
-
-The gap is semantic understanding. A pattern matcher sees `unlink(user_input)` and flags it. It doesn't ask: *what can a caller actually do with this?* It doesn't reason about whether that dangerous call is the symptom or the disease.
-
-LLMs do reason about intent. That's what I wanted to test.
+If a pattern matcher sees `unlink(user_input)`, it flags it. It doesn’t ask: *what is this code trying to enable?*  
+It doesn’t ask whether the dangerous call is the root cause — or just one symptom. LLMs, in theory, can reason about intent. That’s what I wanted to test.
 
 ---
 
 ## What I Built
 
-**[CODE_MAPPER](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER)** is a multi-agent pipeline that performs security analysis on codebases. Not a single prompt — a staged pipeline where five specialised agents build on each other's output before anything is flagged as a vulnerability.
+**[CODE_MAPPER](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER)** is a staged, multi-agent security analysis pipeline.
 
-Here's the flow:
+Not a single giant prompt. Not “scan this file and tell me what’s wrong.”  
+It’s a layered workflow where five specialized agents build structured context before anything is marked as a vulnerability.
 
+The flow looks like this:
 ```
 Agent 1a  →  What does this codebase do? What's the domain?
 Agent 1b  →  What does each file do? Where are the dangerous patterns?
@@ -32,85 +33,114 @@ Agent 1c  →  What data flows through here? What's sensitive?
 Agent 1d  →  Per file: what are the sources? What are the sinks? What lines?
 Agent 1e  →  Trace source → sink. Is this exploitable? How?
 ```
+Agent 1d is the pivot.
+It generates a structured [terrain object](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/architecture.md#agent-1d--terrain-synthesizer) per file — a map of:
 
-Agent 1d is the pivot. It produces a structured [terrain object](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/architecture.md#agent-1d--terrain-synthesizer) for each file — a map of where untrusted data enters (sources) and where dangerous operations happen (sinks), with exact line numbers. Agent 1e uses those anchors to do focused taint tracing, reading only the code around the relevant lines rather than the whole file.
+- where untrusted input enters (sources)
+- where dangerous operations occur (sinks)
+- the exact line numbers for both
 
-After Agent 1e, an [adversarial verifier](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/architecture.md#adversarial-verifier) challenges every high-severity finding with a separate LLM call — essentially asking: *is there a reason this is a false positive?* If the finding can't survive that challenge, confidence drops or severity is downgraded.
+Agent 1e then does focused taint tracing, but only around those anchors. It doesn’t reread the entire file blindly. It reasons locally, with structure.
+
+After that, an [adversarial verifier](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/architecture.md#adversarial-verifier) challenges every high-severity finding in a separate LLM call:
+
+> “Is there a reason this could be a false positive?”
+
+If the finding can’t survive that pushback, confidence drops or severity gets downgraded. This was intentional. I didn’t want hype. I wanted friction because that's what we do during a manual code review.
 
 ---
 
 ## The Benchmark: One File, Two Tools
 
-I ran both CODE_MAPPER and Snyk against the same C file — `fileio.c` from [go-sqlite3-ext](https://github.com/MoshZillaRadio/go-sqlite3-ext), a public repository hosted by [CodeWhite](https://github.com/MoshZillaRadio) as part of a CTF challenge. Real production-weight C code, not a toy example.
+I ran both CODE_MAPPER and Snyk against the same C file — `fileio.c` from [go-sqlite3-ext](https://github.com/MoshZillaRadio/go-sqlite3-ext), a public repository hosted by [CodeWhite](https://github.com/MoshZillaRadio) as part of a CTF challenge.
 
 **Snyk found one finding.**
+Path traversal via `unlink(zFile)`. CWE-23.
 
 ![Snyk finding panel — path traversal (CWE-23)](/images/projects/code-mapper/snyk-finding-panel.png)
 
-Path traversal. `unlink(zFile)` called with an unsanitised user-supplied path. CWE-23. Fair enough — it's a real vulnerability.
 
-**CODE_MAPPER found three findings**, which together form a complete attack chain:
+**CODE_MAPPER found three findings**, which together form a full attack chain.
 
-The results can be [found here](https://github.com/bharaths97/Agents/blob/main/CODE_MAPPER/Documentation/Test_Report_1.html)
+Full results here:  
+https://github.com/bharaths97/Agents/blob/main/CODE_MAPPER/Documentation/Test_Report_1.html
 
 | Stage | Finding | What it means |
 |---|---|---|
-| Reconnaissance | `fsdir` virtual table | `SELECT name, data FROM fsdir('/etc')` — enumerate and read an entire directory tree in one SQL query |
-| Exfiltration | `readfile()` | `SELECT readfile('/root/.ssh/id_rsa')` — arbitrary file read, returned as a SQL BLOB |
-| Persistence / RCE | `writefile()` | Write arbitrary content to any path — cron jobs, authorised keys, web shells |
+| Reconnaissance | `fsdir` virtual table | `SELECT name, data FROM fsdir('/etc')` — enumerate and read a directory tree in one SQL query |
+| Exfiltration | `readfile()` | `SELECT readfile('/root/.ssh/id_rsa')` — arbitrary file read returned as a SQL BLOB |
+| Persistence / RCE | `writefile()` | Write arbitrary content anywhere — cron jobs, authorized keys, web shells |
 
-Snyk found the tail of Stage 3. A developer patching Snyk's finding — removing or guarding the `unlink()` call — would leave Stages 1 and 2 fully intact, and the rest of Stage 3 exploitable through `fopen`/`fwrite` alone.
+Snyk flagged the tail end of Stage 3. If a developer “fixes” the Snyk finding by guarding or removing `unlink()`, Stages 1 and 2 remain fully exploitable — and Stage 3 is still reachable via `fopen`/`fwrite`.
 
-The root cause CODE_MAPPER identified: **no `realpath()` call, no allowlist check, at any of the three entry points**. One fix closes everything. Snyk's remediation closes one sink. See the [full technical breakdown](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/snyk-comparison.md) for the complete taint path comparison.
+The root cause CODE_MAPPER identified:
+> No `realpath()` resolution.  
+> No allowlist enforcement.  
+> At any of the three entry points.
+
+One architectural fix closes everything. Snyk’s remediation closes one sink.
+
+Full technical comparison:  
+https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/snyk-comparison.md
 
 ---
 
 ## Where the Reasoning Actually Helps
 
-The difference isn't raw detection. It's *what kind of reasoning* happens before flagging.
+The real difference wasn’t detection volume. It was direction of reasoning.
 
-Snyk works backward: dangerous function → trace to source. It finds the call.
+Snyk works backward:
+> dangerous function → trace to source
 
-CODE_MAPPER works forward: understand the code's intent, map the entry points, then trace outward. That's why it found `fsdir` — a virtual table, not a function call, with no dangerous function in its definition. There's nothing for a backward trace to start from. You have to understand what a virtual table column accessor does before you can see it as a data exfiltration path.
+CODE_MAPPER works forward:
+> understand intent → map entry points → trace outward
 
-That's genuine semantic understanding producing a real security result.
+That’s why it found `fsdir`. `fsdir` is a virtual table. There’s no obvious “dangerous function” sitting there. No classic sink to anchor a backward trace. You have to understand what a virtual table accessor enables before you see it as a data exfiltration path. That’s semantic reasoning producing a real security outcome.
 
 ---
 
-## Where Reasoning Isn't Enough
+## Where Reasoning Breaks
 
-The most instructive failure came from the same codebase.
+The most humbling failure came from the same repo. The [go-sqlite3-ext](https://github.com/MoshZillaRadio/go-sqlite3-ext) challenge includes a hidden CTF flag deliberately planted in the code. The same pipeline that mapped a three-stage exploit chain missed the flag entirely.
 
-The [go-sqlite3-ext](https://github.com/MoshZillaRadio/go-sqlite3-ext) repo is a CodeWhite CTF challenge — meaning alongside the real vulnerabilities, there's a hidden flag deliberately planted in the code for participants to find. The same tool that mapped a three-stage attack chain across `fileio.c` missed the flag entirely.
+It was split across two C comment lines.  
+A Windows API constant (`FILE_FLAG_BACKUP_SEMANTICS`) appeared right before `FLAG{` on the same line.  
+The closing `}` was on the next line. The flag was fully inside the context window. Every model received the entire file. None caught it. Why?
+Because the detection prompt looked for `FLAG{`. The constant name plus line break visually camouflaged the pattern. No encryption. No encoding. Just noise and formatting.
 
-It was split across two C comment lines, with a Windows API constant name (`FILE_FLAG_BACKUP_SEMANTICS`) immediately before `FLAG{` on the same line, and the closing `}` on the line below. The flag was well within the context window. Every model I tested received the full file. None caught it.
+Same run:
+- Found three real vulnerabilities a commercial tool missed.
+- Failed to detect four words in a comment.
 
-Why? The detection prompt looks for `FLAG{` patterns. With the API constant name preceding it and the brace split across lines, the pattern was camouflaged — not by encryption, not by encoding, just by visual noise and a line break. The model reasoned correctly about everything around it. It just didn't see that specific anomaly.
-
-The same run: found three real vulnerabilities a commercial tool missed, failed to spot four words in a comment.
-
-That contrast is the whole point. Reasoning only applies to what you specifically ask the model to reason about. Outside that scope, it's as blind as any other tool — and in some ways more brittle, because you assume it's looking when it isn't.
+That contrast matters. LLM reasoning only applies to what you explicitly frame as a reasoning task. Outside that scope, it’s blind — and sometimes more brittle than deterministic tooling.
 
 ---
 
 ## The Model Quality Problem
 
-The most surprising result came from running the same pipeline with a different model.
+The most surprising result wasn’t vulnerability detection. It was model variance.
+I ran the exact same pipeline twice:
+- Once with a stronger reasoning model.
+- Once with a cheaper one.
 
-I ran CODE_MAPPER against the go-sqlite3-ext repo twice — once with a stronger reasoning model, once with a cheaper one. The stronger model found the three findings above. The cheaper model found none from that file.
+Stronger model → three findings.  
+Cheaper model → zero findings from that file.
 
-The cheaper model didn't fail at taint tracing. It failed at **terrain synthesis** — Agent 1d's job of identifying sources and sinks with accurate line numbers. Without good line numbers, Agent 1e skips the file entirely. One weak link in the chain, and the whole run produces nothing.
+The failure wasn’t in taint tracing. It failed in **terrain synthesis** (Agent 1d). If line numbers for sources and sinks are wrong, Agent 1e skips the file entirely. One weak reasoning stage breaks the whole pipeline. Architecturally, this matters.
 
-This matters architecturally. If you're building a multi-agent pipeline, the weakest reasoning step determines the output quality of everything after it. Choosing models by stage — cheaper for classification tasks, capable for reasoning tasks — is the right call. Using the cheapest model everywhere breaks the chain silently.
+In a multi-agent system:
+> The weakest reasoning step determines downstream output quality.
+Using cheaper models for classification steps makes sense. Using cheaper models for structural reasoning silently collapses the chain.
 
 ---
 
-## What This Project Is and Isn't
+## What This Is (And Isn’t)
 
-This is a research project, not a production tool. It's slower than traditional SAST, and it doesn't replace Semgrep for the things Semgrep is good at.
+This is not a production SAST replacement. It’s slower than Semgrep. It doesn’t compete with CodeQL on rule coverage.
 
-But it found a complete attack chain that a commercial tool missed. It identified root causes rather than symptoms. And it surfaced reasoning about *why* a path is dangerous, not just *that* it is.
+But it did:
+- Identify a complete attack chain a commercial tool missed.
+- Isolate root cause instead of surface-level symptoms.
+- Explain *why* a path is dangerous — not just that it matches a pattern.
 
-That gap — between flagging a dangerous call and understanding an attack — is where I think AI has something genuine to add to security workflows. Not as a replacement for existing tooling. As the reasoning layer on top of it.
-
-I'm still running comparisons. More to come.
+That’s the gap I care about. Not replacing existing tooling. Layering reasoning on top of it. Still running comparisons. More to come.
