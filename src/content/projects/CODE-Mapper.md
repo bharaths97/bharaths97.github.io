@@ -20,7 +20,7 @@ It doesn’t ask whether the dangerous call is the root cause — or just one sy
 
 ## What I Built
 
-**[CODE_MAPPER](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER)** is a staged, multi-agent security analysis pipeline.
+[CODE_MAPPER](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER) is a staged, multi-agent security analysis pipeline.
 
 Not a single giant prompt. Not “scan this file and tell me what’s wrong.”  
 It’s a layered workflow where five specialized agents build structured context before anything is marked as a vulnerability.
