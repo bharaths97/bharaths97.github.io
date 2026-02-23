@@ -2,7 +2,7 @@
 title: ManageEngine VMP Disclosures
 summary: Responsible disclosure notes for endpoint-agent issues that were acknowledged and patched.
 tags: vulnerability-research, disclosure, windows
-order: 1
+order: 2
 ---
 
 ## Context

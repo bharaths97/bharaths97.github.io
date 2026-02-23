@@ -2,7 +2,7 @@
 title: Covert Channels in Cryptic Crosswords
 summary: Research project modeling steganographic communication inside cryptic crossword structures.
 tags: research, steganography, publication
-order: 3
+order: 4
 ---
 
 ## Problem

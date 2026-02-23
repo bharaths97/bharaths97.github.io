@@ -2,7 +2,7 @@
 title: SINES Framework
 summary: Cross-platform DFIR automation framework for artifact collection and triage.
 tags: dfir, automation, incident-response
-order: 2
+order: 3
 ---
 
 ## Goal
