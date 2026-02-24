@@ -31,16 +31,6 @@ export function ProjectDetailPage({ slug }: ProjectDetailPageProps) {
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
-      <div className="fixed inset-0 pointer-events-none z-50 opacity-10">
-        <div
-          className="h-full w-full bg-gradient-to-b from-transparent via-[#00ff41] to-transparent animate-[scan_8s_linear_infinite]"
-          style={{
-            backgroundSize: '100% 4px',
-            animation: 'scan 8s linear infinite'
-          }}
-        />
-      </div>
-
       <div className="relative z-10 mx-auto w-full max-w-5xl">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <a
@@ -77,13 +67,6 @@ export function ProjectDetailPage({ slug }: ProjectDetailPageProps) {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes scan {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(100vh); }
-        }
-      `}</style>
     </div>
   );
 }
