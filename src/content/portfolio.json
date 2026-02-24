@@ -164,6 +164,21 @@
       "subtitle": "Research, tooling, and real-world vulnerability disclosures.",
       "items": [
         {
+          "id": "ai-research",
+          "title": "Code Mapper - A Security Code Scanning Tool",
+          "meta": "Agentic AI + Research + SAST",
+          "summary": "AI agentic tool to map a codebase for attack surface",
+          "bullets": [
+            "A coordinated 5-agent scanner code scanner",
+            "Disects codebases into domain modeling, semantic reasoning, data classification, terrain mapping, and taint propagation",
+            "Surfacing 3x more findings than a commercial SAST tool on the same target, including 2 attack surfaces the tool had no visibility into."
+          ],
+          "links": [
+            { "label": "Github", "url": "https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER" },
+            { "label": "Writeup", "url": "https://bharaths97.github.io/#/projects/CODE-Mapper" }
+          ]
+        },
+        {
           "id": "manageengine-disclosures",
           "title": "ManageEngine Vulnerability Manager Plus Disclosures",
           "meta": "Vulnerability Research + Responsible Disclosure",
