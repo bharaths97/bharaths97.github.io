@@ -22,6 +22,10 @@ interface SectionLink {
   url: string;
 }
 
+interface HighlightLink extends SectionLink {
+  description?: string;
+}
+
 interface SectionItem {
   id: string;
   title: string;
@@ -93,6 +97,10 @@ interface PortfolioContent {
   home: {
     terminalTyping: string;
     badge: string;
+    highlight?: {
+      label: string;
+      links: HighlightLink[];
+    };
     headline: [string, string];
     primaryLine: string;
     secondaryLine: string;
@@ -338,10 +346,35 @@ export function PortfolioPage() {
 
       <section id="home" className="min-h-screen flex items-center justify-center pt-16 px-4">
         <div className="max-w-5xl mx-auto text-center">
-          <div className="mb-8 inline-block">
+          <div className="mb-8 flex flex-col items-center gap-2">
             <div className="border border-green-matrix/50 px-4 py-2 inline-block bg-green-matrix/5">
               <span className="text-green-matrix tracking-widest text-sm">{content.home.badge}</span>
             </div>
+
+            {content.home.highlight && content.home.highlight.links.length > 0 && (
+              <div className="border border-green-matrix/50 px-4 py-2 inline-block bg-green-matrix/5">
+                <p className="text-green-matrix tracking-widest text-sm md:text-base font-mono mb-2">
+                  {content.home.highlight.label}
+                </p>
+                <div className="flex flex-col items-center gap-1">
+                  {content.home.highlight.links.map((link) => (
+                    <div key={`highlight-${link.label}-${link.url}`} className="text-center">
+                      <a
+                        href={link.url}
+                        className="text-white text-base md:text-lg font-mono underline underline-offset-2 hover:text-white/80 transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                      {link.description && (
+                        <p className="text-white/80 text-sm md:text-base font-mono leading-snug mt-0.5">
+                          {link.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <h1 className="text-5xl md:text-7xl mb-6 tracking-tight">

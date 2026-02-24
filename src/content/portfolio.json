@@ -15,6 +15,17 @@
   "home": {
     "terminalTyping": "bharath_suresh.init",
     "badge": "<SYSTEM_ONLINE/>",
+    "highlight": {
+      "label": "<RECENT_RUNS/>",
+      "links": [
+        {
+          "label": "Code Mapper - Writeup",
+          "url": "/#/projects/CODE-Mapper",
+          "description": "An AI Agent based code scanning tool"
+        },
+        { "label": "Code Mapper - GitHub", "url": "https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER" }
+      ]
+    },
     "headline": ["BHARATH_", "SURESH"],
     "primaryLine": "> whoami --brief",
     "secondaryLine": "Security Engineer | Cruciverbalist | Cricketer | Violinist",
