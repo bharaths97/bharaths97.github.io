@@ -34,7 +34,7 @@ Agent 1d  →  Per file: what are the sources? What are the sinks? What lines?
 Agent 1e  →  Trace source → sink. Is this exploitable? How?
 ```
 Agent 1d is the pivot.
-It generates a structured [terrain object](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/architecture.md#agent-1d--terrain-synthesizer) per file — a map of:
+It generates a structured [terrain object](https://github.com/bharaths97/Agents/blob/main/CODE_MAPPER/Documentation/architecture.md#agent-1d--terrain-synthesizer) per file — a map of:
 
 - where untrusted input enters (sources)
 - where dangerous operations occur (sinks)
@@ -42,7 +42,7 @@ It generates a structured [terrain object](https://github.com/bharaths97/Agents/
 
 Agent 1e then does focused taint tracing, but only around those anchors. It doesn’t reread the entire file blindly. It reasons locally, with structure.
 
-After that, an [adversarial verifier](https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/architecture.md#adversarial-verifier) challenges every high-severity finding in a separate LLM call:
+After that, an [adversarial verifier](https://github.com/bharaths97/Agents/blob/main/CODE_MAPPER/Documentation/architecture.md#adversarial-verifier) challenges every high-severity finding in a separate LLM call:
 
 > “Is there a reason this could be a false positive?”
 
@@ -62,8 +62,8 @@ Path traversal via `unlink(zFile)`. CWE-23.
 
 **CODE_MAPPER found three findings**, which together form a full attack chain.
 
-Full results here:  
-https://github.com/bharaths97/Agents/blob/main/CODE_MAPPER/Documentation/Test_Report_1.html
+Full results here:
+https://github.com/bharaths97/Agents/blob/main/CODE_MAPPER/Documentation/Test_Report_1.md
 
 | Stage | Finding | What it means |
 |---|---|---|
@@ -80,8 +80,8 @@ The root cause CODE_MAPPER identified:
 
 One architectural fix closes everything. Snyk’s remediation closes one sink.
 
-Full technical comparison:  
-https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER/Documentation/snyk-comparison.md
+Full technical comparison:
+https://github.com/bharaths97/Agents/blob/main/CODE_MAPPER/Documentation/snyk-comparison.md
 
 ---
 
