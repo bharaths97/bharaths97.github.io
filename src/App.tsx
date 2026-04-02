@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { PortfolioPage } from './pages/PortfolioPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
-import { PORTFOLIO_ROUTE, PROJECTS_ROUTE } from './lib/projectRoutes';
+import { PORTFOLIO_ROUTE, PROJECTS_ROUTE, PREP_ROUTE} from './lib/projectRoutes';
 
 type AppRoute =
   | { kind: 'portfolio' }
@@ -27,6 +27,11 @@ const parseRoute = (route: string): AppRoute => {
 
   if (normalized === PROJECTS_ROUTE) {
     return { kind: 'projects' };
+  }
+  
+  if (normalized === PREP_ROUTE) {
+    window.location.replace('/prep/index.html');
+    return { kind: 'portfolio' };
   }
 
   const projectDetailMatch = normalized.match(/^\/projects\/([^/]+)$/);
