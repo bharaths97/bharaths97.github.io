@@ -109,12 +109,13 @@
           "id": "exp-bv",
           "title": "Bureau Veritas Cybersecurity",
           "sublabel": "/production",
-          "meta": "Security Engineer I  |  Seattle, WA  |  Jan 2025 - Jan 2026",
-          "summary": "Pen testing of AWS services. Breaking cloud services the way attackers would.",
+          "meta": "Software Security Engineer I  |  Seattle, WA  |  Jan 2025 - Jan 2026",
+          "summary": "Pen testing of AWS services. Breaking cloud services the way attackers would, and helping rebuild as developers would.",
           "bullets": [
-            "Code and threat model reviews to understand trust boundaries.",
+            "Code and architecture reviews to understand trust boundaries.",
             "Testing of authentication flows, IAM policies, and service interactions.",
-            "Adversarial testing of AI-integrated service, focusing on prompt injection and orchestration abuse."
+            "Adversarial testing of AI-integrated service, focusing on prompt injection and orchestration abuse.",
+            "Developing code to automate processes."
           ]
         },
         {
@@ -162,7 +163,7 @@
           "bullets": [
             "Implemented Microsoft Office web bugs using API hooks.",
             "Built Splunk-to-Slack automation for incident notifications.",
-            "Conducted web application testing of Math Solver"
+            "Conducted web application testing of Math Solver."
           ]
         }
       ]
