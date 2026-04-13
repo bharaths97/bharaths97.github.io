@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Benchling Recruiter Call – Prep Navigator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0c;
+      --bg2: #141414;
+      --bg3: #1a1a1a;
+      --bg4: #222;
+      --text: #e4ddd0;
+      --text-dim: #999;
+      --text-faint: #555;
+      --amber: #e8a52a;
+      --amber-bg: #2a1e08;
+      --amber-border: #3d2c0a;
+      --green: #4aad6e;
+      --green-bg: #0d2a1a;
+      --green-border: #1a4a2e;
+      --red: #d95f5f;
+      --red-bg: #280f0f;
+      --red-border: #4a1c1c;
+      --blue: #6699cc;
+      --blue-bg: #111a28;
+      --border: #222;
+      --border-soft: #2a2a2a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 16px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-badge {
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: var(--amber);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    h1 span { color: var(--amber); }
+    .header-meta {
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    /* SIGNAL BAR */
+    .signal-bar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .signal-bar::-webkit-scrollbar { height: 0; }
+    .signal-label {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      white-space: nowrap;
+    }
+    .signal-chip {
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: var(--amber);
+      font-size: 10px;
+      padding: 2px 10px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* LAYOUT */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 234px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding-bottom: 24px;
+    }
+    .sidebar::-webkit-scrollbar { width: 3px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #2a2a2a; }
+    .sidebar-label {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      padding: 20px 16px 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.12s ease;
+      user-select: none;
+    }
+    .nav-item:hover { background: var(--bg3); }
+    .nav-item.active { background: var(--bg3); border-left-color: var(--amber); }
+    .nav-icon { font-size: 13px; flex-shrink: 0; padding-top: 1px; }
+    .nav-text { flex: 1; min-width: 0; }
+    .nav-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+      line-height: 1.3;
+    }
+    .nav-item.active .nav-label { color: var(--amber); }
+    .nav-tag {
+      display: inline-block;
+      font-size: 9px;
+      letter-spacing: 0.07em;
+      padding: 2px 5px;
+      border-radius: 2px;
+      margin-top: 4px;
+    }
+    .t-opener   { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .t-careful  { background: var(--amber-bg); color: #c4811a;      border: 1px solid var(--amber-border); }
+    .t-clean    { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .t-visa     { background: var(--amber-bg); color: #c4811a;      border: 1px solid var(--amber-border); }
+    .t-close    { background: var(--blue-bg);  color: var(--blue);  border: 1px solid #1e2d42; }
+    .t-logistics{ background: var(--bg3);      color: var(--text-faint); border: 1px solid var(--border-soft); }
+
+    /* CONTENT */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 40px 60px;
+    }
+    .content::-webkit-scrollbar { width: 3px; }
+    .content::-webkit-scrollbar-thumb { background: #2a2a2a; }
+
+    .welcome {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 12px;
+    }
+    .welcome-glyph { font-size: 30px; margin-bottom: 4px; color: var(--text-faint); }
+    .welcome-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .welcome-sub { font-size: 12px; line-height: 1.7; max-width: 300px; color: var(--text-faint); }
+
+    .ct-eyebrow {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 8px;
+    }
+    .ct-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 24px;
+      line-height: 1.2;
+    }
+
+    /* ANSWER BLOCK */
+    .answer-block {
+      background: var(--bg2);
+      border: 1px solid var(--border-soft);
+      border-left: 3px solid var(--amber);
+      border-radius: 4px;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+    }
+    .block-eyebrow {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 10px;
+    }
+    .answer-text {
+      font-size: 13px;
+      line-height: 1.9;
+      color: var(--text);
+      font-style: italic;
+      white-space: pre-line;
+    }
+
+    /* NOTE */
+    .note-block {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      line-height: 1.75;
+      color: var(--text-dim);
+    }
+    .nb-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 5px;
+    }
+
+    /* NEVER SAY */
+    .never-block {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-left: 3px solid var(--red);
+      border-radius: 4px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+    }
+    .never-eyebrow {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+    .never-item {
+      font-size: 12px;
+      color: #c07878;
+      line-height: 1.75;
+      padding-left: 16px;
+      position: relative;
+    }
+    .never-item::before {
+      content: '\00D7';
+      position: absolute;
+      left: 0;
+      color: var(--red);
+      font-size: 11px;
+      top: 1px;
+    }
+
+    /* FOLLOW-UPS */
+    .fu-section-label {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 10px;
+      padding-top: 4px;
+    }
+    .fu-card {
+      border: 1px solid var(--border-soft);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: border-color 0.12s;
+    }
+    .fu-card:hover { border-color: #333; }
+    .fu-card.open  { border-color: #3a3a3a; }
+    .fu-q {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 16px;
+      cursor: pointer;
+      background: var(--bg2);
+      transition: background 0.12s;
+    }
+    .fu-q:hover { background: var(--bg3); }
+    .fu-q-text {
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.5;
+    }
+    .fu-q-text::before { content: '\21B3  '; color: var(--text-faint); }
+    .fu-arrow {
+      color: var(--text-faint);
+      font-size: 12px;
+      flex-shrink: 0;
+      transition: transform 0.2s;
+      margin-top: 2px;
+    }
+    .fu-card.open .fu-arrow { transform: rotate(180deg); }
+    .fu-body {
+      display: none;
+      padding: 14px 18px 14px 20px;
+      background: #111;
+      border-top: 1px solid var(--border);
+    }
+    .fu-card.open .fu-body { display: block; }
+    .fu-a-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+    .fu-a-text {
+      font-size: 12px;
+      line-height: 1.9;
+      color: var(--text);
+      font-style: italic;
+      white-space: pre-line;
+    }
+    .fu-note {
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 10px;
+      font-style: normal;
+      line-height: 1.6;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* TABLE */
+    .table-wrap { margin-top: 20px; overflow-x: auto; }
+    .table-label {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 10px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th {
+      text-align: left;
+      padding: 7px 12px;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #181818;
+      color: var(--text-dim);
+      line-height: 1.5;
+      vertical-align: top;
+    }
+    .td-yes     { color: var(--green); font-weight: 500; }
+    .td-no      { color: var(--red);   font-weight: 500; }
+    .td-if      { color: #c4a030;      font-weight: 500; }
+    .td-reframe { color: var(--blue);  font-weight: 500; }
+
+    /* QUESTIONS TO ASK */
+    .q-card {
+      background: var(--bg2);
+      border: 1px solid var(--border-soft);
+      border-left: 3px solid var(--blue);
+      border-radius: 4px;
+      padding: 16px 20px;
+      margin-bottom: 10px;
+    }
+    .q-num {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 6px;
+    }
+    .q-text {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.65;
+      font-style: italic;
+    }
+    .q-why {
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 8px;
+      line-height: 1.6;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-badge">Mode 1 — Recruiter Call</div>
+    <h1>Benchling <span>AppSec</span> — Prep Navigator</h1>
+  </div>
+  <div class="header-meta">BHARATH SURESH &middot; APPLICATION SECURITY ENGINEER</div>
+</header>
+
+<div class="signal-bar">
+  <div class="signal-label">Signal Phrases:</div>
+  <div class="signal-chip">"finding and fixing"</div>
+  <div class="signal-chip">"embedded in the SDLC, not bolted on after"</div>
+  <div class="signal-chip">"making it repeatable at scale"</div>
+</div>
+
+<div class="main">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="content" id="content">
+    <div class="welcome">
+      <div class="welcome-glyph">&#x2B21;</div>
+      <div class="welcome-title">Select a question to begin.</div>
+      <div class="welcome-sub">Click any topic in the sidebar to see your talking points and follow-up paths.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+const topics = [
+  {
+    id: 'pitch',
+    icon: '&#127919;',
+    label: 'Tell Me About Yourself',
+    tag: 'OPENER',
+    tagClass: 't-opener',
+    eyebrow: 'QUESTION TYPE &mdash; OPENER',
+    mainAnswerLabel: 'YOUR 60-SECOND PITCH',
+    mainAnswer: [
+      '"I\'m a security engineer with a background that spans both software development and application security. I started at Zoho as a software engineer building endpoint security products in C++, where I was also doing security-focused code reviews and building detection logic for OWASP and CWE vulnerability classes &mdash; so the security mindset was there from the start.',
+      '',
+      'After my MS in Cybersecurity at RIT, I moved fully into AppSec &mdash; first at WinWin Labs doing threat modeling and fixing a critical auth vulnerability, and most recently at Bureau Veritas doing end-to-end application security reviews across a large client portfolio. That\'s included code reviews across 120+ service repositories, threat model validation, AWS security testing, and adversarial testing on AI-integrated services. I\'ve also built automation to make that testing more repeatable and scalable.',
+      '',
+      'What draws me to Benchling specifically is the chance to do this work embedded inside a product org &mdash; where I can actually influence how security gets built in, not just reviewed after the fact."'
+    ].join('\n'),
+    note: 'Keep it under 90 seconds. Stop at the last sentence and let them respond. That last line mirrors Benchling\'s language and invites a natural follow-up.',
+    followUps: [
+      {
+        q: 'What drew you to AppSec from software development?',
+        a: '"The security mindset was there from the start at Zoho &mdash; I was doing security-focused code reviews and building detection logic for OWASP classes while working as a developer. The pivot wasn\'t a direction change, it was a deepening."',
+        note: 'Short is fine here. One or two sentences, then let them move on.'
+      }
+    ],
+    neverSay: null
+  },
+  {
+    id: 'gap',
+    icon: '&#128197;',
+    label: 'Experience Gap',
+    tag: 'HANDLE CAREFULLY',
+    tagClass: 't-careful',
+    eyebrow: 'KNOWN GAP &mdash; JD REQUIRES 2+ YEARS',
+    mainAnswerLabel: 'IF ASKED: "The role requires 2+ years &mdash; where are you on that?"',
+    mainAnswer: [
+      '"In titled security roles, I\'m at about 18 months between Bureau Veritas and WinWin Labs. But I\'d push back slightly on the timeline framing &mdash; at Zoho, I was a software engineer building and reviewing security products, identifying 50+ vulnerabilities in C++ codebases, and implementing detection logic for OWASP and CWE classes. That security foundation started there. If you count the full arc of security-relevant work, it\'s closer to three and a half years.',
+      '',
+      'I understand the requirement, and I\'d rather let the specifics of what I\'ve done speak to readiness than argue over tenure."'
+    ].join('\n'),
+    note: 'Don\'t apologize or over-explain. Acknowledge honestly, reframe with Zoho, redirect to substance. The last sentence signals confidence and closes the topic.',
+    followUps: [
+      {
+        q: '"That\'s still under 2 years in a titled security role though."',
+        a: '"Fair &mdash; but I\'d invite you to look at the specifics. At BV I was doing 120+ repo code reviews, threat model validation, AWS security testing, and adversarial testing on AI-integrated services. The depth of that work is not entry-level."',
+        note: 'Stay factual and calm. Don\'t get defensive. One short paragraph, then stop.'
+      },
+      {
+        q: '"Would you be open to a more junior scope if we felt the gap was a concern?"',
+        a: '"I\'d want to understand what that looks like in practice. My concern would be taking a scope that doesn\'t use the depth I\'ve built &mdash; but I\'m open to a conversation about fit and expectations."',
+        note: 'Doesn\'t close any doors. Signals confidence without being rigid.'
+      }
+    ],
+    neverSay: null
+  },
+  {
+    id: 'benchling',
+    icon: '&#128161;',
+    label: 'Why Benchling',
+    tag: 'BIOTECH ANGLE',
+    tagClass: 't-clean',
+    eyebrow: 'QUESTION TYPE &mdash; MOTIVATION / FIT',
+    mainAnswerLabel: 'YOUR ANSWER',
+    mainAnswer: [
+      '"Benchling\'s customers are biotech and pharma companies &mdash; they\'re protecting research data, IP, and workflows that are genuinely high-stakes. Security failures in that context aren\'t just embarrassing, they have real downstream consequences. I want to work somewhere where the security function actually matters to the business, not just as a compliance checkbox.',
+      '',
+      'And from what I\'ve read about how Benchling approaches security, it sounds like it\'s embedded in the engineering process rather than bolted on after the fact &mdash; which is exactly how I\'ve been trying to work at BV."'
+    ].join('\n'),
+    note: 'If you\'ve done any homework on Benchling &mdash; their blog, job posts, LinkedIn &mdash; add one specific observation. Even "I noticed your team is focused on SDLC automation" signals you actually read the JD.',
+    followUps: [
+      {
+        q: '"What do you know about how we approach security here?"',
+        a: '"From the JD it\'s clear the focus is SDLC integration and automation &mdash; building security in rather than bolting it on after. That matches how I\'ve been working at BV. I\'d be curious what that looks like in practice on your team."',
+        note: 'Pivots back to them. Shows genuine curiosity. Mirrors their language from the JD.'
+      }
+    ],
+    neverSay: null
+  },
+  {
+    id: 'bv',
+    icon: '&#127970;',
+    label: 'Why Did You Leave BV',
+    tag: 'CLEAN ANSWER',
+    tagClass: 't-clean',
+    eyebrow: 'QUESTION TYPE &mdash; DEPARTURE / TRANSITION',
+    mainAnswerLabel: 'YOUR ANSWER',
+    mainAnswer: '"Bureau Veritas lost their primary AWS contract &mdash; AWS was roughly two-thirds of the company\'s revenue. When that didn\'t renew, there were large-scale layoffs across the organization. It was a business decision, not a performance one. I was part of that reduction."',
+    note: 'One short paragraph. Full stop. Don\'t elaborate unless they ask. Contract non-renewal is a well-understood business event with zero stigma.',
+    followUps: [
+      {
+        q: '"Were you expecting it?"',
+        a: '"It wasn\'t a complete surprise &mdash; when a single client is that dominant in a consulting firm\'s book, there\'s always concentration risk. But the timing was abrupt. I used the transition to be intentional about what kind of role I wanted next, which is what led me to Benchling."',
+        note: 'The last sentence pivots naturally back to motivation. Always use it.'
+      },
+      {
+        q: '"Were you the only one affected, or was it broader?"',
+        a: '"No, it was large-scale &mdash; the loss of the AWS contract affected most of the cybersecurity division. It wasn\'t a performance issue."',
+        note: 'Brief and factual. Reinforces this was structural, not personal.'
+      }
+    ],
+    neverSay: [
+      "Don't volunteer the AWS revenue percentage unless they ask directly &mdash; it invites more questions",
+      "Don't open with 'I was laid off' &mdash; lead with the business context first, land on 'I was part of that reduction'",
+      "Don't linger &mdash; answer once cleanly and let them move on"
+    ]
+  },
+  {
+    id: 'visa',
+    icon: '&#127758;',
+    label: 'Work Authorization / Visa',
+    tag: 'HANDLE CAREFULLY',
+    tagClass: 't-visa',
+    eyebrow: 'QUESTION TYPE &mdash; WORK AUTHORIZATION',
+    mainAnswerLabel: 'CORE ANSWER &mdash; USE THIS SEQUENCE EVERY TIME',
+    mainAnswer: '"I\'m currently authorized to work in the US through July 2027 on STEM OPT &mdash; no sponsorship required right now. Down the road I\'ll be on the H1B path, which I know most tech companies of Benchling\'s size are familiar with."',
+    note: 'Always lead with the positive: 15 months of clean authorization, nothing for them to do today. Do NOT lead with "I\'m on F1." Normalize the H1B path &mdash; don\'t apologize for it.',
+    followUps: [
+      {
+        q: '"When exactly does your authorization expire?"',
+        a: '"July 2027 &mdash; so there\'s a solid runway before anything needs to change."',
+        note: "Don't elaborate. Let them do the math. 15 months keeps this out of 'immediate problem' territory."
+      },
+      {
+        q: '"Will you need us to sponsor your H1B?"',
+        a: '"Yes, that would be the path &mdash; typically a company files the H1B petition the April before the October start date. Given my July 2027 expiration, that timeline aligns. I\'ve confirmed with my attorney that cap-gap provisions protect continuity if the petition is filed on time."',
+        note: "Signals you've done the homework and won't surprise them with a gap situation. Takes logistical uncertainty off their plate."
+      },
+      {
+        q: '"Have you been selected in the H1B lottery before?"',
+        a: '"I\'ve participated in previous lotteries &mdash; I haven\'t been selected yet. The process is lottery-based, so I\'ve been focused on building a strong profile with the right employer who can support that path."',
+        note: "Answer honestly and briefly. Do NOT volunteer that this will be your last attempt. That information does not help you."
+      }
+    ],
+    neverSay: [
+      "Never mention the 43-day unemployment clock",
+      "Never say 'this is my last H1B attempt'",
+      "Never express urgency about needing to find something quickly",
+      "Never say any version of 'my clock is running on...'"
+    ],
+    table: [
+      { info: 'STEM OPT status',              share: 'YES',      cls: 'td-yes',     when: 'When asked about authorization' },
+      { info: 'EAD expiry &mdash; July 2027', share: 'YES',      cls: 'td-yes',     when: 'When asked directly' },
+      { info: 'Will need H1B sponsorship',    share: 'YES',      cls: 'td-yes',     when: 'Proactively, after authorization answer' },
+      { info: 'H1B lottery history',          share: 'IF ASKED', cls: 'td-if',      when: 'Brief and neutral only' },
+      { info: 'Last H1B attempt',             share: 'NEVER',    cls: 'td-no',      when: '&mdash;' },
+      { info: '43-day unemployment clock',    share: 'NEVER',    cls: 'td-no',      when: '&mdash;' },
+      { info: 'Urgency to start',             share: 'REFRAME',  cls: 'td-reframe', when: 'As "ready to move immediately"' }
+    ]
+  },
+  {
+    id: 'comp',
+    icon: '&#128176;',
+    label: 'Comp &amp; Timeline',
+    tag: 'LOGISTICS',
+    tagClass: 't-logistics',
+    eyebrow: 'QUESTION TYPE &mdash; COMPENSATION / AVAILABILITY',
+    mainAnswerLabel: 'ON COMPENSATION',
+    mainAnswer: '"I\'m flexible and open to discussing &mdash; I\'d want to understand the full package, but I\'m in the range for senior AppSec engineers in Seattle. I don\'t have a number that would end the conversation."',
+    note: 'If pressed for a number, give a range: $160K&ndash;$190K base depending on total comp structure. Adjust based on your actual floor. Don\'t discount your range because of visa status.',
+    followUps: [
+      {
+        q: '"When can you start?"',
+        a: '"I can start immediately or within 2 weeks of an offer &mdash; I\'m not in an active role right now and I\'ve been intentional about being fully interview-ready before engaging."',
+        note: "Positions urgency as preparation, not desperation. The 43-day clock stays completely invisible here."
+      },
+      {
+        q: '"What\'s your current employment status?"',
+        a: '"I wrapped up my role at Bureau Veritas in January and I\'m focused full-time on finding the right next role."',
+        note: "Clean and factual. No over-explanation needed."
+      }
+    ],
+    neverSay: null
+  },
+  {
+    id: 'elsewhere',
+    icon: '&#129309;',
+    label: 'Interviewing Elsewhere?',
+    tag: 'USE IT',
+    tagClass: 't-clean',
+    eyebrow: 'QUESTION TYPE &mdash; OTHER OPPORTUNITIES',
+    mainAnswerLabel: 'YOUR ANSWER',
+    mainAnswer: '"Yes &mdash; I\'m in final rounds with one other company. I\'m being selective about the type of role, which is why Benchling is genuinely at the top of my list."',
+    note: 'This is useful to say &mdash; it creates mild urgency on their end and signals you have options, which reduces any desperation read on your timeline and availability.',
+    followUps: [
+      {
+        q: '"Which company? What role?"',
+        a: '"I\'d prefer to keep that confidential for now &mdash; but it\'s a similar AppSec scope. I\'m trying to evaluate fit carefully on both sides before sharing details."',
+        note: "Perfectly acceptable not to name them. Don't feel pressured to."
+      }
+    ],
+    neverSay: null
+  },
+  {
+    id: 'questions',
+    icon: '&#10067;',
+    label: 'Questions to Ask Them',
+    tag: 'CLOSE STRONG',
+    tagClass: 't-close',
+    eyebrow: 'END OF CALL &mdash; ASK 2 OF THESE',
+    questions: [
+      {
+        text: '"How embedded is the security team in the product development process today &mdash; is this a greenfield build or are there existing processes to extend?"',
+        why: 'Shows SDLC orientation. Helps you understand the actual scope. Mirrors their JD language back to them.'
+      },
+      {
+        text: '"What does the first 90 days look like for someone in this role &mdash; is it mostly onboarding and learning the codebase, or are they expected to be doing active reviews early?"',
+        why: 'Practical question that signals readiness to ramp. Shows you\'re thinking about the real job, not just getting past screening.'
+      },
+      {
+        text: '"What\'s the biggest security challenge the team is focused on right now?"',
+        why: 'Opens them up and signals genuine curiosity. Bonus: their answer gives you framing for the technical round if you advance.'
+      }
+    ]
+  }
+];
+
+// Render sidebar
+function renderSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '<div class="sidebar-label">Questions</div>';
+  topics.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'nav-item';
+    el.dataset.id = t.id;
+    el.innerHTML =
+      '<div class="nav-icon">' + t.icon + '</div>' +
+      '<div class="nav-text">' +
+        '<div class="nav-label">' + t.label + '</div>' +
+        '<span class="nav-tag ' + t.tagClass + '">' + t.tag + '</span>' +
+      '</div>';
+    el.addEventListener('click', function() { selectTopic(t.id); });
+    sb.appendChild(el);
+  });
+}
+
+function selectTopic(id) {
+  document.querySelectorAll('.nav-item').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+  var t = null;
+  for (var i = 0; i < topics.length; i++) { if (topics[i].id === id) { t = topics[i]; break; } }
+  if (!t) return;
+  if (t.questions) { renderQuestionsPage(t); return; }
+  renderMainPage(t);
+}
+
+function renderMainPage(t) {
+  var html = '<div class="ct-eyebrow">' + t.eyebrow + '</div>' +
+    '<div class="ct-title">' + t.label + '</div>' +
+    '<div class="answer-block">' +
+      '<div class="block-eyebrow">' + t.mainAnswerLabel + '</div>' +
+      '<div class="answer-text">' + nl2br(t.mainAnswer) + '</div>' +
+    '</div>';
+
+  if (t.note) {
+    html += '<div class="note-block"><div class="nb-label">Coaching Note</div>' + t.note + '</div>';
+  }
+
+  if (t.neverSay && t.neverSay.length) {
+    html += '<div class="never-block"><div class="never-eyebrow">&#9888; Never Say</div>';
+    t.neverSay.forEach(function(s) { html += '<div class="never-item">' + s + '</div>'; });
+    html += '</div>';
+  }
+
+  if (t.followUps && t.followUps.length) {
+    html += '<div class="fu-section-label">Follow-up Paths &mdash; Click to Expand</div>';
+    t.followUps.forEach(function(fu, i) {
+      var fid = 'fu-' + t.id + '-' + i;
+      html +=
+        '<div class="fu-card" id="' + fid + '">' +
+          '<div class="fu-q" onclick="toggleFU(\'' + fid + '\')">' +
+            '<div class="fu-q-text">' + fu.q + '</div>' +
+            '<div class="fu-arrow">&#9660;</div>' +
+          '</div>' +
+          '<div class="fu-body">' +
+            '<div class="fu-a-label">Your Answer</div>' +
+            '<div class="fu-a-text">' + nl2br(fu.a) + '</div>' +
+            (fu.note ? '<div class="fu-note">' + fu.note + '</div>' : '') +
+          '</div>' +
+        '</div>';
+    });
+  }
+
+  if (t.table) {
+    html += '<div class="divider"></div>' +
+      '<div class="table-wrap">' +
+        '<div class="table-label">Disclosure Reference &mdash; What to Share vs. Keep Private</div>' +
+        '<table><thead><tr><th>Information</th><th>Share?</th><th>When / How</th></tr></thead><tbody>';
+    t.table.forEach(function(row) {
+      html += '<tr>' +
+        '<td>' + row.info + '</td>' +
+        '<td class="' + row.cls + '">' + row.share + '</td>' +
+        '<td>' + row.when + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderQuestionsPage(t) {
+  var html = '<div class="ct-eyebrow">' + t.eyebrow + '</div>' +
+    '<div class="ct-title">' + t.label + '</div>' +
+    '<div class="note-block"><div class="nb-label">Coaching Note</div>Ask 2 of these. Asking thoughtful questions signals you\'re evaluating them as much as they\'re evaluating you. The third question is especially useful &mdash; their answer gives you framing for the technical round.</div>';
+  t.questions.forEach(function(q, i) {
+    html +=
+      '<div class="q-card">' +
+        '<div class="q-num">Question ' + (i + 1) + '</div>' +
+        '<div class="q-text">' + q.text + '</div>' +
+        '<div class="q-why">' + q.why + '</div>' +
+      '</div>';
+  });
+  document.getElementById('content').innerHTML = html;
+}
+
+function toggleFU(fid) {
+  var card = document.getElementById(fid);
+  if (card) card.classList.toggle('open');
+}
+
+function nl2br(str) {
+  return str.replace(/\n/g, '<br>');
+}
+
+renderSidebar();
+</script>
+</body>
+</html>
