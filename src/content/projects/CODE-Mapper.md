@@ -2,7 +2,7 @@
 title: Can AI Reason About Security? I Built Something to Find Out.
 summary: A commercial tool found one vulnerability. Mine found three — and mapped the attack chain.
 tags: Agentic AI, SAST Tooling, Code Review
-order: 1
+order: 2
 ---
 
 I didn’t build this because I think AI is magic. I built it because I wanted to stress-test a very specific question:

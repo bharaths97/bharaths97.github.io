@@ -19,11 +19,11 @@
       "label": "<RECENT_RUNS/>",
       "links": [
         {
-          "label": "Code Mapper - Writeup",
-          "url": "/#/projects/CODE-Mapper",
-          "description": "An AI Agent based code scanning tool"
+          "label": "PR Security Gate - Writeup",
+          "url": "/#/projects/PR-Security-Gate",
+          "description": "An AI integrated PR scanning tool"
         },
-        { "label": "Code Mapper - GitHub", "url": "https://github.com/bharaths97/Agents/tree/main/CODE_MAPPER" }
+        { "label": "PR Security Gate - GitHub", "url": "https://github.com/bharaths97/pr-security-gate" }
       ]
     },
     "headline": ["BHARATH_", "SURESH"],
@@ -174,6 +174,21 @@
       "title": "PROJECTS-RESEARCH-BUGBOUNTY.log",
       "subtitle": "Research, tooling, and real-world vulnerability disclosures.",
       "items": [
+        {
+          "id": "pr-security-gate",
+          "title": "PR Security Gate - AI-Enriched CI/CD Security Gate",
+          "meta": "DevSecOps + AI Security + SAST",
+          "summary": "GitHub Actions reusable workflow that enriches Semgrep findings with a 7-phase AI pipeline before posting two structured PR comments",
+          "bullets": [
+            "A reusable GitHub Actions workflow with a hybrid architecture: a deterministic Semgrep scan controls merge blocking, a 7-phase AI pipeline enriches findings with codebase-specific fixes, taint paths, cross-file chains, adversarial verification, and a PR-level threat model.",
+            "Hardened the prompt layer against task-aligned injection and AI-to-AI laundering across pipeline steps using nonce-tagged XML delimiters, per-step trust boundary labels, and an explicit insufficient_evidence abstain verdict — bringing 4 of 6 prompt files down from HIGH severity in an AI-driven prompt audit.",
+            "Validated end-to-end against a self-built healthcare-style demo app (CareTrack) across 12+ PRs using Semgrep Cloud as the live scanning backend, with two AI providers, two backend options, and 117+ unit tests."
+          ],
+          "links": [
+            { "label": "Github", "url": "https://github.com/bharaths97/CICD-Security" },
+            { "label": "Writeup", "url": "https://bharaths97.github.io/#/projects/PR-Security-Gate" }
+          ]
+        },
         {
           "id": "ai-research",
           "title": "Code Mapper - A Security Code Scanning Tool",
